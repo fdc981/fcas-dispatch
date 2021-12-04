@@ -74,7 +74,7 @@ def run_experiment(M_value):
     return m.Runtime
 
 
-if __name__ == '__main__':2
+if __name__ == '__main__':
     M_values = [7, 10, 50, 100, 500, 1000, 5000]
     num_trials = 100
     results = np.ndarray((len(M_values), num_trials))
