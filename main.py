@@ -79,12 +79,11 @@ if __name__ == '__main__':
     num_trials = 100
     results = np.ndarray((len(M_values), num_trials))
 
-    for M in M_values:
+    for i, M in enumerate(M_values):
         print(f'[{M}]', end=' ')
-        results[M] = []
-        for trial_idx in range(num_trials):
-            print(trial_idx, end=' ')
-            results[M].append(run_experiment(M))
+        for j in range(num_trials):
+            print(j, end=' ')
+            results[i][j] = run_experiment(M)
         print()
 
     p_values = np.ndarray((len(M_values), len(M_values)))
