@@ -97,5 +97,5 @@ if __name__ == '__main__':
             else:
                 p_values[i][j] = 1
 
-    results.tofile("results.txt")
-    p_values.tofile("p_values.txt")
+    np.save("results.npy", results)
+    np.save("p_values.npy", p_values)
