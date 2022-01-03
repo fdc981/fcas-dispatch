@@ -1,2 +1,3 @@
-# FCAS-bidder
-FCAS bidding strategy for fast responses
+# fcas-dispatch
+
+Optimisation models for dispatch of frequency ancillary control services (FCAS) using battery energy storage systems (BESS).
