@@ -3,7 +3,6 @@
 import pandas as pd
 import pathlib
 
-# TODO: add a download function?
 
 def get_sa_dispatch_data(num: int, column_name: str) -> list:
     """Retrieve some daily dispatch data."""
