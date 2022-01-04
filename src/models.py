@@ -127,7 +127,11 @@ def make_cooptimisation_model(
         l_raise_d=None,
         l_lower_d=None,
         efficiency_in=0.92,
-        efficiency_out=0.90
+        efficiency_out=0.90,
+        p_min=0,
+        p_max=7,
+        soc_min=0.35*13.5,
+        soc_max=13.5
 ):
     """Creates an optimisation problem for slow and delayed FCAS dispatch with
     a Tesla Powerwall.
@@ -141,6 +145,12 @@ def make_cooptimisation_model(
         l_lower_s: array-like containing prices for slow lower FCAS [1]
         l_raise_d: array-like containing prices for delayed raise FCAS [1]
         l_lower_d: array-like containing prices for delayed loewr FCAS [1]
+        efficiency_in: the charging efficiency, as a proportion
+        efficiency_out: the discharging efficiency, as a proportion
+        p_min: minimum charge/discharge power limit (in kW)
+        p_max: maximum charge/discharge power limit (in kW)
+        soc_min: the minimum amount of stored energy (in kWh)
+        soc_max: the maximum amount of stored energy (in kWh)
 
     Notes:
         [1] If the parameter `l_raise_s`, `l_lower_s`, `l_raise_d` or
@@ -158,10 +168,6 @@ def make_cooptimisation_model(
     # indices of consecutive trading intervals
     T_s = [i for i in range(5*n)]
     T_d = [i for i in range(0, 5*n, 5)]
-
-    # in kW
-    p_min = 0
-    p_max = 7
 
     # column vectors
     p_raise_s = m.addVars(T_s, vtype='C', name="p_raise_s", lb=p_min, ub=p_max)
@@ -185,9 +191,6 @@ def make_cooptimisation_model(
     if l_lower_d is None:
         l_lower_d = data.get_sa_dispatch_data(n, "LOWER5MINRRP")
 
-    # in kW
-    soc_min = 0.35 * 13.5
-    soc_max = 13.5
     soc = m.addVars(T_s, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
