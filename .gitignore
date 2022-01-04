@@ -1,1 +1,5 @@
 notebooks/*.ipynb
+data/
+.venv/
+**/.ipynb_checkpoints/
+**/__pycache__/
