@@ -3,21 +3,12 @@
 import pandas as pd
 import pathlib
 
+cols = None
+sa_price_df = None
 
-def get_sa_dispatch_data(num: int, column_name: str) -> list:
-    """Retrieve some daily dispatch data."""
-    global cols
-    global sa_price_df
-
-    assert column_name in cols
-
-    assert len(sa_price_df[column_name].values[:num]) == num
-
-    return sa_price_df[column_name].values[:num]
-
-
-if __name__ == "src":
-    data_path = pathlib.Path("../data/").mkdir(parents=True, exist_ok=True)
+if __name__ == "src.data":
+    data_path = pathlib.Path("../data/")
+    data_path.mkdir(parents=True, exist_ok=True)
 
     try:
         csv_filename = str(next((data_path).glob("*.CSV")))
@@ -44,3 +35,15 @@ if __name__ == "src":
     sa_price_df = df.loc[df["REGIONID"] == "SA1", cols]
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
+
+
+def get_sa_dispatch_data(num: int, column_name: str) -> list:
+    """Retrieve some daily dispatch data."""
+    global cols
+    global sa_price_df
+
+    assert column_name in cols
+
+    assert len(sa_price_df[column_name].values[:num]) == num
+
+    return sa_price_df[column_name].values[:num]
