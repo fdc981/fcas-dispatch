@@ -222,13 +222,6 @@ def make_cooptimisation_model(
     m.addConstrs((-p_lower_d[t] - M * (1 - b_lower_d[t]) <= -epsilon for t in T_d))
     m.addConstrs((p_lower_d[t] - M * b_lower_d[t] <= 0 for t in T_d))
 
-    m.addConstrs((b_raise_s[t] + b_lower_s[t] <= 1 for t in T_s))
-    m.addConstrs((b_raise_d[t] + b_lower_d[t] <= 1 for t in T_d))
-
-    m.addConstrs((b_raise_s[t] + b_lower_d[t // 1] <= 1 for t in T_s))
-    m.addConstrs((b_raise_d[t // 1] + b_lower_s[t] <= 1 for t in T_s))
-
-    m.addConstrs((b_lower_s[t] + b_lower_d[t // 1] <= 1 for t in T_s))
-    m.addConstrs((b_raise_s[t] + b_raise_d[t // 1] <= 1 for t in T_s))
+    m.addConstrs((b_raise_s[t] + b_lower_s[t] + b_raise_d[t // 1] + b_lower_d[t // 1] <= 1 for t in T_s))
 
     return m
