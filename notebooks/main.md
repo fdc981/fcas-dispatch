@@ -23,9 +23,15 @@ import time
 import pandas as pd
 import seaborn as sns
 import scipy
+import sys
+
+%load_ext autoreload
+%autoreload 2
+
+sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -124,7 +130,7 @@ display(pd.DataFrame(sol))
 # Experiments
 <!-- #endregion -->
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Powerwall model
 <!-- #endregion -->
 
