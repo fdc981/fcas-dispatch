@@ -3,6 +3,7 @@
 import gurobipy as gp
 import numpy as np
 import src.data as data
+from decimal import Decimal
 
 
 # TODO: add the efficiency coefficients to each model
@@ -165,9 +166,9 @@ def make_cooptimisation_model(
     m = gp.Model()
     m.Params.LogToConsole = 0
 
-    # indices of consecutive trading intervals
-    T_s = [i for i in range(5*n)]
-    T_d = [i for i in range(0, 5*n, 5)]
+    # expressed in decimals to avoid floating point errors
+    T_d = [Decimal('%.1f' % i) for i in np.arange(0, n)]
+    T_s = [Decimal('%.1f' % i) for i in np.arange(0, n, 1/5)]
 
     # column vectors
     p_raise_s = m.addVars(T_s, vtype='C', name="p_raise_s", lb=p_min, ub=p_max)
@@ -183,13 +184,13 @@ def make_cooptimisation_model(
 
     # in $AUD, lists
     if l_raise_s is None:
-        l_raise_s = data.get_sa_dispatch_data(n, "RAISE60SECRRP")
+        l_raise_s = data.get_sa_dispatch_data(T_s, "RAISE60SECRRP")
     if l_lower_s is None:
-        l_lower_s = data.get_sa_dispatch_data(n, "LOWER60SECRRP")
+        l_lower_s = data.get_sa_dispatch_data(T_s, "LOWER60SECRRP")
     if l_raise_d is None:
-        l_raise_d = data.get_sa_dispatch_data(n, "RAISE5MINRRP")
+        l_raise_d = data.get_sa_dispatch_data(T_d, "RAISE5MINRRP")
     if l_lower_d is None:
-        l_lower_d = data.get_sa_dispatch_data(n, "LOWER5MINRRP")
+        l_lower_d = data.get_sa_dispatch_data(T_d, "LOWER5MINRRP")
 
     soc = m.addVars(T_s, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
@@ -198,15 +199,16 @@ def make_cooptimisation_model(
     delayed_delta = 5 / 60
     slow_delta = 1 / 60
 
-    m.setObjective(sum((l_raise_s[t // 5] * p_raise_s[t] + l_lower_s[t // 5] * p_lower_s[t] for t in T_s))
-                   + sum((l_raise_d[t // 5] * p_raise_d[t] + l_lower_d[t // 5] * p_lower_d[t] for t in T_d)), gp.GRB.MAXIMIZE)
+    m.setObjective(sum((l_raise_s[t] * p_raise_s[t] + l_lower_s[t] * p_lower_s[t] for t in T_s))
+                   + sum((l_raise_d[t] * p_raise_d[t] + l_lower_d[t] * p_lower_d[t] for t in T_d)), gp.GRB.MAXIMIZE)
 
     m.addConstr(soc[0] == initial_soc + p_lower_s[0] * slow_delta - p_raise_s[0] * slow_delta
                                       + p_lower_d[0] * delayed_delta - p_raise_d[0] * delayed_delta)
+
     for t in [i for i in T_s if i != 0]:
-        m.addConstr(soc[t] == soc[t-1] + p_lower_s[t] * efficiency_in * slow_delta - p_raise_s[t] / efficiency_out * slow_delta)
+        m.addConstr(soc[t] == soc[t - Decimal("0.2")] + p_lower_s[t] * efficiency_in * slow_delta - p_raise_s[t] / efficiency_out * slow_delta)
     for t in [i for i in T_d if i != 0]:
-        m.addConstr(soc[t] == soc[t-5] + p_lower_d[t] * efficiency_in * delayed_delta - p_raise_d[t] / efficiency_out * delayed_delta)
+        m.addConstr(soc[t] == soc[t - Decimal("1")] + p_lower_d[t] * efficiency_in * delayed_delta - p_raise_d[t] / efficiency_out * delayed_delta)
 
     m.addConstrs((-p_raise_s[t] - M * (1 - b_raise_s[t]) <= -epsilon for t in T_s))
     m.addConstrs((p_raise_s[t] - M * b_raise_s[t] <= 0 for t in T_s))
