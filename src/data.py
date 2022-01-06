@@ -37,13 +37,17 @@ if __name__ == "src.data":
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
 
-def get_sa_dispatch_data(num: int, column_name: str) -> list:
+def get_sa_dispatch_data(indices: list, column_name: str) -> list:
     """Retrieve some daily dispatch data."""
     global cols
     global sa_price_df
 
     assert column_name in cols
 
+    num = len(indices)
+
     assert len(sa_price_df[column_name].values[:num]) == num
 
-    return sa_price_df[column_name].values[:num]
+    pairs = zip(indices, sa_price_df[column_name].values[:num])
+
+    return dict(pairs)
