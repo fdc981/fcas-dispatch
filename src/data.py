@@ -1,5 +1,6 @@
 """Data retrieval functions."""
 
+import numpy as np
 import pandas as pd
 import pathlib
 
@@ -12,6 +13,7 @@ if __name__ == "src.data":
 
     try:
         csv_filename = str(next((data_path).glob("*.CSV")))
+        print("Retrieving data from", csv_filename)
     except Exception as e:
         print("No dispatch CSV files found.")
         raise e
@@ -37,17 +39,17 @@ if __name__ == "src.data":
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
 
-def get_sa_dispatch_data(indices: list, column_name: str) -> list:
+def get_sa_dispatch_data(indices: list, column_name: str, repeat: int = 1) -> dict:
     """Retrieve some daily dispatch data."""
     global cols
     global sa_price_df
 
     assert column_name in cols
+    assert len(indices) % repeat == 0
 
-    num = len(indices)
+    num = len(indices) // repeat
+    values = np.repeat(sa_price_df[column_name].values[:num], repeat)
 
-    assert len(sa_price_df[column_name].values[:num]) == num
+    assert len(values) == num * repeat
 
-    pairs = zip(indices, sa_price_df[column_name].values[:num])
-
-    return dict(pairs)
+    return dict(zip(indices, values))

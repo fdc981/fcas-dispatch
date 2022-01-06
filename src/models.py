@@ -184,9 +184,9 @@ def make_cooptimisation_model(
 
     # in $AUD, lists
     if l_raise_s is None:
-        l_raise_s = data.get_sa_dispatch_data(T_s, "RAISE60SECRRP")
+        l_raise_s = data.get_sa_dispatch_data(T_s, "RAISE60SECRRP", repeat=5)
     if l_lower_s is None:
-        l_lower_s = data.get_sa_dispatch_data(T_s, "LOWER60SECRRP")
+        l_lower_s = data.get_sa_dispatch_data(T_s, "LOWER60SECRRP", repeat=5)
     if l_raise_d is None:
         l_raise_d = data.get_sa_dispatch_data(T_d, "RAISE5MINRRP")
     if l_lower_d is None:
