@@ -38,9 +38,17 @@ if __name__ == "src.data":
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
-
 def get_sa_dispatch_data(indices: list, column_name: str, repeat: int = 1) -> dict:
-    """Retrieve some daily dispatch data."""
+    """Retrieve some daily dispatch data.
+
+    Args:
+        indices (int): the number of entries required.
+        column_name (str): the column name to retrieve. See the MMS Data Model
+                           Report for more information.
+        repeat (int): number of repetitions of the entries.
+
+    Returns:
+        a dictionary of dispatch prices."""
     global cols
     global sa_price_df
 
