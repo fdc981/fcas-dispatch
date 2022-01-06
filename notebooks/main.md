@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -130,7 +130,7 @@ display(pd.DataFrame(sol))
 # Experiments
 <!-- #endregion -->
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ## Powerwall model
 <!-- #endregion -->
 
@@ -401,12 +401,14 @@ plt.scatter(range(n), soc)
 ## Co-optimisation model
 <!-- #endregion -->
 
+
 ```python
 from src.models import make_cooptimisation_model
+from decimal import Decimal
 ```
 
 ```python
-n = 50
+n = 30
 m = make_cooptimisation_model(n = n)
 ```
 
@@ -415,29 +417,28 @@ m.optimize()
 display(m.ObjVal, m.Runtime, m.NodeCount, m.IterCount)
 ```
 
-```python
-# Tabulate the solution.
+```python tags=[]
+# Tabulate the solution. Output to `df`.
 
-p_raise_s = [m.getVarByName(f"p_raise_s[{i}]").x for i in range(5*n)]
-p_lower_s = [m.getVarByName(f"p_lower_s[{i}]").x for i in range(5*n)]
+T_d = [Decimal('%.1f' % i) for i in np.arange(0, n)]
+T_s = [Decimal('%.1f' % i) for i in np.arange(0, n, 1/5)]
 
-p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 5 == 0 else np.nan) for i in range(5*n)]
-p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 5 == 0 else np.nan) for i in range(5*n)]
+p_raise_s = [m.getVarByName(f"p_raise_s[{i}]").x for i in T_s]
+p_lower_s = [m.getVarByName(f"p_lower_s[{i}]").x for i in T_s]
 
-b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in range(5*n)]
-b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in range(5*n)]
+p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
+p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
 
-b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 5 == 0 else np.nan) for i in range(5*n)]
-b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 5 == 0 else np.nan) for i in range(5*n)]
+b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in T_s]
+b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in T_s]
 
-soc = [m.getVarByName(f"soc[{i}]").x for i in range(5*n)]
-```
+b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
+b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
 
-```python
-df = pd.DataFrame(columns = ["p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s", "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"])
-```
+soc = [m.getVarByName(f"soc[{i}]").x for i in T_s]
 
-```python
+df = pd.DataFrame(columns = ["p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s", "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T_s)
+
 df["p_raise_s"] = p_raise_s
 df["p_lower_s"] = p_lower_s
 
@@ -454,6 +455,11 @@ df["soc"] = soc
 ```
 
 ```python
+# Verify the answer by checking whether only one binary variable is 1 at every moment
+all(df["b_raise_s"] + df["b_raise_d"] + df["b_lower_s"] + df["b_lower_d"] <= 1)
+```
+
+```python
 with pd.option_context("display.max_rows", None, "display.max_columns", None) as p:
     display(df)
 ```
@@ -461,8 +467,4 @@ with pd.option_context("display.max_rows", None, "display.max_columns", None) as
 ```python
 # Graph the state of charge over time.
 plt.plot(df.index, df["soc"])
-```
-
-```python
-
 ```
