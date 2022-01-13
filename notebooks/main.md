@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -130,7 +130,7 @@ display(pd.DataFrame(sol))
 # Experiments
 <!-- #endregion -->
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Powerwall model
 <!-- #endregion -->
 
@@ -407,6 +407,48 @@ from src.models import make_cooptimisation_model
 from decimal import Decimal
 ```
 
+```python tags=[]
+def tabulate_solution(m):
+    """Tabulate the solution produced by a model. Returns a DataFrame."""
+    n = len([v for v in m.getVars() if "p_raise_d" in v.VarName])
+
+    T = [i for i in range(n)]
+
+    p_raise_s = [m.getVarByName(f"p_raise_s[{i}]").x for i in T]
+    p_lower_s = [m.getVarByName(f"p_lower_s[{i}]").x for i in T]
+
+    p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
+    p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
+
+    b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in T]
+    b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in T]
+
+    b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
+    b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
+
+    soc = [m.getVarByName(f"soc[{i}]").x for i in T]
+
+    df = pd.DataFrame(columns = ["p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s", "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T)
+
+    df["p_raise_s"] = p_raise_s
+    df["p_lower_s"] = p_lower_s
+
+    df["p_raise_d"] = p_raise_d
+    df["p_lower_d"] = p_lower_d
+
+    df["b_raise_s"] = b_raise_s
+    df["b_lower_s"] = b_lower_s
+
+    df["b_raise_d"] = b_raise_d
+    df["b_lower_d"] = b_lower_d
+
+    df["soc"] = soc
+    
+    return df
+```
+
+### Initial experimentation
+
 ```python
 n = 30
 m = make_cooptimisation_model(n = n)
@@ -417,41 +459,8 @@ m.optimize()
 display(m.ObjVal, m.Runtime, m.NodeCount, m.IterCount)
 ```
 
-```python tags=[]
-# Tabulate the solution. Output to `df`.
-
-T_d = [Decimal('%.1f' % i) for i in np.arange(0, n)]
-T_s = [Decimal('%.1f' % i) for i in np.arange(0, n, 1/5)]
-
-p_raise_s = [m.getVarByName(f"p_raise_s[{i}]").x for i in T_s]
-p_lower_s = [m.getVarByName(f"p_lower_s[{i}]").x for i in T_s]
-
-p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
-p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
-
-b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in T_s]
-b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in T_s]
-
-b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
-b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T_s]
-
-soc = [m.getVarByName(f"soc[{i}]").x for i in T_s]
-
-df = pd.DataFrame(columns = ["p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s", "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T_s)
-
-df["p_raise_s"] = p_raise_s
-df["p_lower_s"] = p_lower_s
-
-df["p_raise_d"] = p_raise_d
-df["p_lower_d"] = p_lower_d
-
-df["b_raise_s"] = b_raise_s
-df["b_lower_s"] = b_lower_s
-
-df["b_raise_d"] = b_raise_d
-df["b_lower_d"] = b_lower_d
-
-df["soc"] = soc
+```python
+df = tabulate_solution(m)
 ```
 
 ```python
@@ -461,10 +470,59 @@ all(df["b_raise_s"] + df["b_raise_d"] + df["b_lower_s"] + df["b_lower_d"] <= 1)
 
 ```python
 with pd.option_context("display.max_rows", None, "display.max_columns", None) as p:
-    display(df)
+    display(df.round(3))
 ```
 
 ```python
 # Graph the state of charge over time.
 plt.plot(df.index, df["soc"])
+```
+
+<!-- #region tags=[] -->
+### Day-ahead optimisation
+<!-- #endregion -->
+
+```python
+n = 24 * 60 // 5
+m = make_cooptimisation_model(n = n, soc_min = 13.5 * 0.35, soc_max = 13.5 * 0.85, p_max = 7)
+```
+
+```python
+# Limit processing power.
+m.setParam("Threads", 1)
+
+m.optimize()
+```
+
+```python
+print("Runtime:", m.Runtime)
+print("Node count:", m.NodeCount)
+```
+
+```python
+df = tabulate_solution(m)
+```
+
+```python
+with pd.option_context("display.max_rows", None, "display.max_columns", None) as p:
+    display(df.round(3))
+```
+
+```python
+# Graph the state of charge over time.
+plt.plot(df.index, df["soc"])
+```
+
+### Effects of price spikes
+
+```python
+import src.data as data
+```
+
+```python
+plt.plot(range(len(data.sa_price_df)), data.sa_price_df["RAISE60SECRRP"])
+```
+
+```python
+plt.plot(range(len(data.sa_price_df)), data.sa_price_df["LOWER60SECRRP"])
 ```
