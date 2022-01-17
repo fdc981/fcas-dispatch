@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.5
+      jupytext_version: 1.13.6
   kernelspec:
     display_name: fcas-project
     language: python
@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -130,7 +130,7 @@ display(pd.DataFrame(sol))
 # Experiments
 <!-- #endregion -->
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Powerwall model
 <!-- #endregion -->
 
@@ -407,7 +407,7 @@ from src.models import make_cooptimisation_model
 from decimal import Decimal
 ```
 
-```python tags=[]
+```python tags=[] jupyter={"source_hidden": true}
 def tabulate_solution(m):
     """Tabulate the solution produced by a model. Returns a DataFrame."""
     n = len([v for v in m.getVars() if "p_raise_d" in v.VarName])
@@ -420,15 +420,23 @@ def tabulate_solution(m):
     p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
     p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
 
+    p_raise_f = [(m.getVarByName(f"p_raise_f[{i}]").x if i % 1 == 0 else 0) for i in T]
+    p_lower_f = [(m.getVarByName(f"p_lower_f[{i}]").x if i % 1 == 0 else 0) for i in T]
+
     b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in T]
     b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in T]
 
     b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
     b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
 
+    b_raise_f = [(m.getVarByName(f"b_raise_f[{i}]").x if i % 1 == 0 else 0) for i in T]
+    b_lower_f = [(m.getVarByName(f"b_lower_f[{i}]").x if i % 1 == 0 else 0) for i in T]
+
     soc = [m.getVarByName(f"soc[{i}]").x for i in T]
 
-    df = pd.DataFrame(columns = ["p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s", "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T)
+    df = pd.DataFrame(columns = ["p_raise_f", "b_raise_f", "p_lower_f", "b_lower_f",
+                                 "p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s",
+                                 "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T)
 
     df["p_raise_s"] = p_raise_s
     df["p_lower_s"] = p_lower_s
@@ -436,18 +444,26 @@ def tabulate_solution(m):
     df["p_raise_d"] = p_raise_d
     df["p_lower_d"] = p_lower_d
 
+    df["p_raise_f"] = p_raise_f
+    df["p_lower_f"] = p_lower_f
+
     df["b_raise_s"] = b_raise_s
     df["b_lower_s"] = b_lower_s
 
     df["b_raise_d"] = b_raise_d
     df["b_lower_d"] = b_lower_d
 
+    df["b_raise_f"] = b_raise_f
+    df["b_lower_f"] = b_lower_f
+
     df["soc"] = soc
     
     return df
 ```
 
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
 ### Initial experimentation
+<!-- #endregion -->
 
 ```python
 n = 30
@@ -465,7 +481,7 @@ df = tabulate_solution(m)
 
 ```python
 # Verify the answer by checking whether only one binary variable is 1 at every moment
-all(df["b_raise_s"] + df["b_raise_d"] + df["b_lower_s"] + df["b_lower_d"] <= 1)
+all(df["b_raise_f"] + df["b_raise_s"] + df["b_raise_d"] + df["b_lower_f"] + df["b_lower_s"] + df["b_lower_d"] <= 1)
 ```
 
 ```python
@@ -509,20 +525,140 @@ with pd.option_context("display.max_rows", None, "display.max_columns", None) as
 ```
 
 ```python
-# Graph the state of charge over time.
-plt.plot(df.index, df["soc"])
+import src.data as data
+
+date_index = data.sa_price_df["SETTLEMENTDATE"]
 ```
 
-### Effects of price spikes
+```python
+# Graph the state of charge over time.
+plt.figure(figsize=(12,7))
+plt.title("State of charge over time")
+plt.plot(df.index, df["soc"])
+plt.show()
+```
+
+### Results for day-ahead optimisation
+
+```python
+cols = ["b_raise_f", "b_lower_f", "b_raise_s", "b_lower_s", "b_raise_d", "b_lower_d"]
+names = ["Raise 6 sec", "Lower 6 sec", "Raise 60 sec", "Lower 60 sec", "Raise 5 min", "Lower 5 min"]
+
+plt.figure(figsize=(12,7))
+
+plt.title("Enablement frequency")
+plt.bar(names, df[cols].sum())
+plt.xlabel("FCAS Product")
+plt.ylabel("Frequency")
+
+plt.show()
+```
 
 ```python
 import src.data as data
+
+cols = ["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"]
+
+plt.figure(figsize=(12,7))
+
+plt.title("FCAS prices for 2021-12-11")
+plt.plot(data.sa_price_df["SETTLEMENTDATE"], data.sa_price_df[cols])
+plt.legend(cols)
+
+plt.show()
 ```
 
 ```python
-plt.plot(range(len(data.sa_price_df)), data.sa_price_df["RAISE60SECRRP"])
+plt.figure(figsize=(12,7))
+
+plt.title("FCAS prices for 2021-12-11")
+plt.plot(data.sa_price_df["SETTLEMENTDATE"], data.sa_price_df[cols].max(axis=1))
 ```
 
 ```python
-plt.plot(range(len(data.sa_price_df)), data.sa_price_df["LOWER60SECRRP"])
+argmax = []
+for i in data.sa_price_df.index:
+    argmax.append(cols[np.argmax(data.sa_price_df.loc[i, cols])])
+
+plt.figure(figsize=(12,7))
+
+plt.title("Number of times an FCAS product was at max price")
+plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec"], pd.value_counts(argmax))
+plt.show()
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.title("State of charge over time (enablements highlighted)")
+plt.plot(df.index, df["soc"])
+
+b_raise_f_plotted = 0
+b_lower_s_plotted = 0
+b_raise_s_plotted = 0
+b_raise_d_plotted = 0
+
+# note: lw=0 to ensure smooth borders
+for i in df.index:
+    if df.loc[i, "b_raise_f"] == 1:
+        plt.axvspan(i, i+1, alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
+        b_raise_f_plotted = 1
+    if df.loc[i, "b_lower_s"] == 1:
+        plt.axvspan(i, i+1, alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
+        b_lower_s_plotted = 1
+    if df.loc[i, "b_raise_s"] == 1:
+        plt.axvspan(i, i+1, alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
+        b_raise_s_plotted = 1
+    if df.loc[i, "b_raise_d"] == 1:
+        plt.axvspan(i, i+1, alpha=0.2, color='brown', lw=0, label = "_"*b_raise_d_plotted + "Raise 5 min")
+        b_raise_d_plotted = 1
+
+plt.legend()
+        
+plt.show()
+```
+
+```python
+cols = ["p_lower_f", "p_raise_f", "p_lower_s", "p_raise_s", "p_lower_d", "p_raise_d"]
+power_sum = df[cols].sum(axis=1)
+
+power_sum.value_counts()
+```
+
+```python
+power_sum[2]
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.title("State of charge over time (enablements at max price highlighted)")
+plt.plot(df.index, df["soc"])
+
+b_raise_f_plotted = 0
+b_lower_s_plotted = 0
+b_raise_s_plotted = 0
+b_raise_d_plotted = 0
+
+# note: lw=0 to ensure smooth borders
+for i in df.index:
+    if df.loc[i, "b_raise_f"] == 1 and argmax[i] == "RAISE6SECRRP":
+        plt.axvspan(i, i+1, alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
+        b_raise_f_plotted = 1
+    if df.loc[i, "b_lower_s"] == 1 and argmax[i] == "LOWER60SECRRP":
+        plt.axvspan(i, i+1, alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
+        b_lower_s_plotted = 1
+    if df.loc[i, "b_raise_s"] == 1 and argmax[i] == "RAISE60SECRRP":
+        plt.axvspan(i, i+1, alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
+        b_raise_s_plotted = 1
+
+plt.legend()
+        
+plt.show()
+```
+
+```python
+import src.data
+```
+
+```python
+src.data.sa_price_df
 ```
