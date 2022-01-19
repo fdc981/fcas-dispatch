@@ -136,20 +136,20 @@ def make_cooptimisation_model(
         soc_min=0.35*13.5,
         soc_max=13.5
 ):
-    """Creates an optimisation problem for slow and delayed FCAS dispatch with
-    a Tesla Powerwall.
+    """Creates a Gurobi model for finding the dispatch maximising profit when
+    participating in all contingency FCAS markets.
 
     Args:
         n: number of trading intervals
         M: value of big M for binary indicator constraints
         epsilon: an arbitrarily small value
         initial_soc: initial state of charge (in kWh)
-        l_raise_s: array-like containing prices for slow raise FCAS [1]
-        l_lower_s: array-like containing prices for slow lower FCAS [1]
-        l_raise_d: array-like containing prices for delayed raise FCAS [1]
-        l_lower_d: array-like containing prices for delayed loewr FCAS [1]
-        l_raise_f: array-like containing prices for fast raise FCAS [1]
-        l_lower_f: array-like containing prices for fast loewr FCAS [1]
+        l_raise_s: array-like containing prices for slow raise FCAS (in $AUD per MWh) [1]
+        l_lower_s: array-like containing prices for slow lower FCAS (in $AUD per MWh) [1]
+        l_raise_d: array-like containing prices for delayed raise FCAS (in $AUD per MWh) [1]
+        l_lower_d: array-like containing prices for delayed loewr FCAS (in $AUD per MWh) [1]
+        l_raise_f: array-like containing prices for fast raise FCAS (in $AUD per MWh) [1]
+        l_lower_f: array-like containing prices for fast loewr FCAS (in $AUD per MWh) [1]
         efficiency_in: the charging efficiency, as a proportion
         efficiency_out: the discharging efficiency, as a proportion
         p_min: minimum charge/discharge power limit (in kW)
