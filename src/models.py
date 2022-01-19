@@ -143,7 +143,7 @@ def make_cooptimisation_model(
         n: number of trading intervals
         M: value of big M for binary indicator constraints
         epsilon: an arbitrarily small value
-        initial_soc: initial state of charge (in kWh)
+        initial_soc: initial state of charge (in MWh)
         l_raise_s: array-like containing prices for slow raise FCAS (in $AUD per MWh) [1]
         l_lower_s: array-like containing prices for slow lower FCAS (in $AUD per MWh) [1]
         l_raise_d: array-like containing prices for delayed raise FCAS (in $AUD per MWh) [1]
@@ -152,10 +152,10 @@ def make_cooptimisation_model(
         l_lower_f: array-like containing prices for fast loewr FCAS (in $AUD per MWh) [1]
         efficiency_in: the charging efficiency, as a proportion
         efficiency_out: the discharging efficiency, as a proportion
-        p_min: minimum charge/discharge power limit (in kW)
-        p_max: maximum charge/discharge power limit (in kW)
-        soc_min: the minimum amount of stored energy (in kWh)
-        soc_max: the maximum amount of stored energy (in kWh)
+        p_min: minimum charge/discharge power limit (in MW)
+        p_max: maximum charge/discharge power limit (in MW)
+        soc_min: the minimum amount of stored energy (in MWh)
+        soc_max: the maximum amount of stored energy (in MWh)
 
     Notes:
         [1] For each of the `l_raise_*` and `l_lower_*` parameters, if it is
