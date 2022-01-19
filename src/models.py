@@ -210,9 +210,9 @@ def make_cooptimisation_model(
     slow_delta = 1 / 60
     fast_delta = 1 / 10 / 60
 
-    m.setObjective(sum((l_raise_s[t] * p_raise_s[t] + l_lower_s[t] * p_lower_s[t]
-                        + l_raise_d[t] * p_raise_d[t] + l_lower_d[t] * p_lower_d[t]
-                        + l_raise_f[t] * p_raise_f[t] + l_lower_f[t] * p_lower_f[t] for t in T)), gp.GRB.MAXIMIZE)
+    m.setObjective(sum(((l_raise_s[t] * p_raise_s[t] + l_lower_s[t] * p_lower_s[t]
+                         + l_raise_d[t] * p_raise_d[t] + l_lower_d[t] * p_lower_d[t]
+                         + l_raise_f[t] * p_raise_f[t] + l_lower_f[t] * p_lower_f[t]) * delayed_delta for t in T)), gp.GRB.MAXIMIZE)
 
     m.addConstr(soc[0] == initial_soc + p_lower_s[0] * slow_delta - p_raise_s[0] * slow_delta
                                       + p_lower_d[0] * delayed_delta - p_raise_d[0] * delayed_delta
