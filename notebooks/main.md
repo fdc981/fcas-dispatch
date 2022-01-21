@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -130,7 +130,7 @@ display(pd.DataFrame(sol))
 # Experiments
 <!-- #endregion -->
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Powerwall model
 <!-- #endregion -->
 
@@ -407,7 +407,7 @@ from src.models import make_cooptimisation_model
 from decimal import Decimal
 ```
 
-```python tags=[] jupyter={"source_hidden": true}
+```python tags=[]
 def tabulate_solution(m):
     """Tabulate the solution produced by a model. Returns a DataFrame."""
     n = len([v for v in m.getVars() if "p_raise_d" in v.VarName])
@@ -461,7 +461,7 @@ def tabulate_solution(m):
     return df
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Initial experimentation
 <!-- #endregion -->
 
@@ -494,13 +494,22 @@ with pd.option_context("display.max_rows", None, "display.max_columns", None) as
 plt.plot(df.index, df["soc"])
 ```
 
-<!-- #region tags=[] -->
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Day-ahead optimisation
 <!-- #endregion -->
 
 ```python
+plt.rcParams.update({'font.size': 13})
+```
+
+```python
 n = 24 * 60 // 5
-m = make_cooptimisation_model(n = n, soc_min = 13.5 * 0.35, soc_max = 13.5 * 0.85, p_max = 7)
+m = make_cooptimisation_model(n=n, 
+                              soc_min=0,
+                              soc_max=3,
+                              initial_soc=1.5,
+                              p_min=0,
+                              p_max=0.5)
 ```
 
 ```python
@@ -527,18 +536,23 @@ with pd.option_context("display.max_rows", None, "display.max_columns", None) as
 ```python
 import src.data as data
 
-date_index = data.sa_price_df["SETTLEMENTDATE"]
+date_index = data.sa_price_df["SETTLEMENTDATE"].values
 ```
 
 ```python
 # Graph the state of charge over time.
 plt.figure(figsize=(12,7))
 plt.title("State of charge over time")
-plt.plot(df.index, df["soc"])
+plt.plot(date_index, df["soc"])
+plt.xlabel("Index of trading interval")
+plt.ylabel("State of charge (in MWh)")
+plt.grid(which='major', color='lightgrey')
 plt.show()
 ```
 
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Results for day-ahead optimisation
+<!-- #endregion -->
 
 ```python
 cols = ["b_raise_f", "b_lower_f", "b_raise_s", "b_lower_s", "b_raise_d", "b_lower_d"]
@@ -550,6 +564,8 @@ plt.title("Enablement frequency")
 plt.bar(names, df[cols].sum())
 plt.xlabel("FCAS Product")
 plt.ylabel("Frequency")
+plt.gca().set_axisbelow(True)
+plt.grid(which='major', axis='y', color='lightgrey')
 
 plt.show()
 ```
@@ -562,7 +578,10 @@ cols = ["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER
 plt.figure(figsize=(12,7))
 
 plt.title("FCAS prices for 2021-12-11")
-plt.plot(data.sa_price_df["SETTLEMENTDATE"], data.sa_price_df[cols])
+plt.plot(date_index, data.sa_price_df[cols])
+plt.xlabel("Date and time (MM-DD HH)")
+plt.ylabel("Price ($AUD per MWh)")
+plt.grid(which='major', color='lightgrey')
 plt.legend(cols)
 
 plt.show()
@@ -584,13 +603,18 @@ plt.figure(figsize=(12,7))
 
 plt.title("Number of times an FCAS product was at max price")
 plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec"], pd.value_counts(argmax))
+plt.xlabel("FCAS Product")
+plt.ylabel("Frequency")
+plt.gca().set_axisbelow(True)
+plt.grid(which='major', axis='y', color='lightgrey')
+
 plt.show()
 ```
 
 ```python
 plt.figure(figsize=(12,7))
 plt.title("State of charge over time (enablements highlighted)")
-plt.plot(df.index, df["soc"])
+plt.plot(date_index, df["soc"])
 
 b_raise_f_plotted = 0
 b_lower_s_plotted = 0
@@ -598,21 +622,23 @@ b_raise_s_plotted = 0
 b_raise_d_plotted = 0
 
 # note: lw=0 to ensure smooth borders
-for i in df.index:
+for i in range(len(date_index)-1):
     if df.loc[i, "b_raise_f"] == 1:
-        plt.axvspan(i, i+1, alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
         b_raise_f_plotted = 1
     if df.loc[i, "b_lower_s"] == 1:
-        plt.axvspan(i, i+1, alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
         b_lower_s_plotted = 1
     if df.loc[i, "b_raise_s"] == 1:
-        plt.axvspan(i, i+1, alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
         b_raise_s_plotted = 1
     if df.loc[i, "b_raise_d"] == 1:
-        plt.axvspan(i, i+1, alpha=0.2, color='brown', lw=0, label = "_"*b_raise_d_plotted + "Raise 5 min")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='brown', lw=0, label = "_"*b_raise_d_plotted + "Raise 5 min")
         b_raise_d_plotted = 1
 
 plt.legend()
+plt.xlabel("Index of trading interval")
+plt.ylabel("State of charge (in MWh)")
         
 plt.show()
 ```
@@ -631,7 +657,7 @@ power_sum[2]
 ```python
 plt.figure(figsize=(12,7))
 plt.title("State of charge over time (enablements at max price highlighted)")
-plt.plot(df.index, df["soc"])
+plt.plot(date_index, df["soc"])
 
 b_raise_f_plotted = 0
 b_lower_s_plotted = 0
@@ -639,26 +665,328 @@ b_raise_s_plotted = 0
 b_raise_d_plotted = 0
 
 # note: lw=0 to ensure smooth borders
-for i in df.index:
+for i in range(len(date_index)-1):
     if df.loc[i, "b_raise_f"] == 1 and argmax[i] == "RAISE6SECRRP":
-        plt.axvspan(i, i+1, alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
         b_raise_f_plotted = 1
     if df.loc[i, "b_lower_s"] == 1 and argmax[i] == "LOWER60SECRRP":
-        plt.axvspan(i, i+1, alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
         b_lower_s_plotted = 1
     if df.loc[i, "b_raise_s"] == 1 and argmax[i] == "RAISE60SECRRP":
-        plt.axvspan(i, i+1, alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
         b_raise_s_plotted = 1
 
 plt.legend()
+plt.xlabel("Index of trading interval")
+plt.ylabel("State of charge (in kWh)")
         
 plt.show()
 ```
 
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
+### Varying initial SOC
+<!-- #endregion -->
+
 ```python
-import src.data
+soc_params = np.linspace(0, 3, 100)
+soc_obj_vals = []
+n = 24 * 60 // 5
+
+for initial_soc in soc_params:
+    print(f"optimizing with initial_soc={initial_soc}")
+    m = make_cooptimisation_model(n=n, 
+                                  soc_min=0,
+                                  soc_max=3,
+                                  initial_soc=initial_soc,
+                                  p_min=0,
+                                  p_max=0.5)
+    m.optimize()
+    soc_obj_vals.append(m.ObjVal)
 ```
 
 ```python
-src.data.sa_price_df
+plt.figure(figsize=(12,7))
+plt.rc('font', size=17)
+plt.title("Objective value (revenue) against initial SOC")
+plt.plot(soc_params, soc_obj_vals)
+plt.xlabel("Initial SOC (in MWh)")
+plt.ylabel("Objective value/Revenue (in $AUD)")
+plt.grid(which='major', color='lightgrey')
+plt.rc('font', size=13)
+```
+
+```python
+params = np.linspace(0, 20, 50)
+obj_vals = []
+
+for p_max in params:
+    print(f"optimizing with p_max={p_max}")
+    m = make_cooptimisation_model(n=n, 
+                                  soc_min=0,
+                                  soc_max=3,
+                                  initial_soc=1.5,
+                                  p_min=0,
+                                  p_max=p_max)
+    m.Params.Threads = 1
+    m.Params.WorkLimit = 8
+    m.optimize()
+    obj_vals.append(m.ObjVal)
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.rc('font', size=17)
+plt.title("Objective value (revenue) with different P_max")
+plt.plot(params, obj_vals)
+plt.xlabel("P_max (in MW)")
+plt.ylabel("Objective value/Revenue (in $AUD)")
+plt.grid(which='major', color='lightgrey')
+
+plt.show()
+plt.rc('font', size=13)
+```
+
+```python
+socmax_params = np.linspace(1.5, 20, 50)
+socmax_obj_vals = []
+
+for soc_max in socmax_params:
+    print(f"optimizing with soc_max={soc_max}")
+    m = make_cooptimisation_model(n=n, 
+                                  soc_min=0,
+                                  soc_max=soc_max,
+                                  initial_soc=1.5,
+                                  p_min=0,
+                                  p_max=0.5)
+    m.Params.Threads = 1
+    m.Params.WorkLimit = 8
+    m.optimize()
+    socmax_obj_vals.append(m.ObjVal)
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.rc('font', size=17)
+plt.title("Objective value (revenue) with different SOC_max")
+plt.plot(socmax_params, socmax_obj_vals)
+plt.xlabel("SOC_max (in MWh)")
+plt.ylabel("Objective value/Revenue (in $AUD)")
+plt.grid(which='major', color='lightgrey')
+
+plt.show()
+plt.rc('font', size=13)
+```
+
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
+### Forecasting
+
+Requires existing daily dispatch data. This can be downloaded with `download.py`.
+<!-- #endregion -->
+
+```python
+import pathlib
+```
+
+```python
+help(data_path.iterdir)
+```
+
+```python
+filtered_filenames.sort()
+filtered_filenames[0]
+```
+
+```python
+data_path = pathlib.Path("../data/")
+data_path.mkdir(parents=True, exist_ok=True)
+
+cols = ["SETTLEMENTDATE", "RRP", "LOWERREGRRP", "RAISEREGRRP",
+        "LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP",
+        "LOWER5MINRRP", "RAISE5MINRRP"]
+
+sa_price_df = pd.DataFrame(columns = cols)
+
+filtered_filenames = [path for path in data_path.iterdir() if "CSV" in str(path) and str(path) < "../data/PUBLIC_DAILY_202112110000_20211212040503.CSV"]
+
+print(filtered_filenames)
+
+for csv_filename in filtered_filenames:
+    print("exporting from:", csv_filename)
+    i_indices = []
+
+    with open(csv_filename, 'r') as f:
+        contents = f.read()
+        for i, line in enumerate(contents.split('\n')):
+            if len(line) > 0 and line[0] == 'I':
+                i_indices.append(i)
+
+    df = pd.read_csv(csv_filename,
+                     skiprows=i_indices[1],
+                     nrows=(i_indices[2] - i_indices[1]-1))
+
+    new_df = df.loc[df["REGIONID"] == "SA1", cols]
+    new_df["SETTLEMENTDATE"] = pd.to_datetime(new_df["SETTLEMENTDATE"])
+    
+    sa_price_df = sa_price_df.append(new_df)
+```
+
+```python
+forecast = pd.DataFrame(columns=["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"])
+
+rng = np.random.default_rng(seed=1)
+
+for col_name in forecast.columns:
+    forecast[col_name] = [max(0, rng.normal(loc=sa_price_df[col_name].mean(),
+                                            scale=sa_price_df[col_name].std())) for _ in range(288)]
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.title("Generated FCAS price forecast")
+plt.plot(date_index, forecast)
+plt.legend(forecast.columns)
+plt.xlabel("Date and time (MM-DD HH)")
+plt.ylabel("Price ($AUD per MWh)")
+plt.grid(which='major', axis='y', color='lightgrey')
+
+plt.show()
+```
+
+```python
+m = make_cooptimisation_model(n=n, 
+                              soc_min=0,
+                              soc_max=3,
+                              initial_soc=1.5,
+                              p_min=0,
+                              p_max=0.5,
+                              l_raise_f=forecast["RAISE6SECRRP"],
+                              l_lower_f=forecast["LOWER6SECRRP"],
+                              l_raise_s=forecast["RAISE60SECRRP"],
+                              l_lower_s=forecast["LOWER60SECRRP"],
+                              l_raise_d=forecast["RAISE5MINRRP"],
+                              l_lower_d=forecast["LOWER5MINRRP"])
+m.Params.Threads = 1
+m.optimize()
+```
+
+```python
+df = tabulate_solution(m)
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.title("State of charge over time")
+plt.plot(date_index, df["soc"])
+
+b_lower_f_plotted = 0
+b_raise_f_plotted = 0
+b_lower_s_plotted = 0
+b_raise_s_plotted = 0
+b_lower_d_plotted = 0
+b_raise_d_plotted = 0
+
+# note: lw=0 to ensure smooth borders
+for i in range(len(date_index)-1):
+    if df.loc[i, "b_lower_f"] == 1:
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='blue', lw=0, label = "_"*b_lower_f_plotted + "Lower 6 sec")
+        b_lower_f_plotted = 1
+    if df.loc[i, "b_raise_f"] == 1:
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
+        b_raise_f_plotted = 1
+    if df.loc[i, "b_lower_s"] == 1:
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
+        b_lower_s_plotted = 1
+    if df.loc[i, "b_raise_s"] == 1:
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
+        b_raise_s_plotted = 1
+    if df.loc[i, "b_lower_d"] == 1:
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='purple', lw=0, label = "_"*b_lower_d_plotted + "Lower 5 min")
+        b_lower_d_plotted = 1
+    if df.loc[i, "b_raise_d"] == 1:
+        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='brown', lw=0, label = "_"*b_raise_d_plotted + "Raise 5 min")
+        b_raise_d_plotted = 1
+        
+plt.legend()
+plt.xlabel("Index of trading interval")
+plt.ylabel("State of charge (in MWh)")
+plt.show()
+```
+
+```python
+cols_f = forecast.columns
+
+argmax = []
+for i in forecast.index:
+    argmax.append(cols_f[np.argmax(forecast.loc[i, cols_f])])
+
+plt.figure(figsize=(12,7))
+
+plt.title("Number of times an FCAS product was at max price")
+plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec", "Lower 6 sec", "Lower 5 min", "Raise 5 min"], pd.value_counts(argmax))
+plt.xlabel("FCAS Product")
+plt.ylabel("Frequency")
+plt.gca().set_axisbelow(True)
+plt.grid(which='major', axis='y', color='lightgrey')
+
+plt.show()
+```
+
+```python
+df[[name for name in df.columns if "p_" in name]].sum(axis=1)
+```
+
+```python
+forecast_obj_vals = []
+
+print("seed:", end='')
+for seed in range(1000):
+    print(seed, end=' ')
+    new_forecast = pd.DataFrame(columns=["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"])
+
+    rng = np.random.default_rng(seed=seed)
+
+    for col_name in new_forecast.columns:
+        new_forecast[col_name] = [max(0, rng.normal(loc=sa_price_df[col_name].mean(),
+                                                    scale=sa_price_df[col_name].std())) for _ in range(288)]
+    m = make_cooptimisation_model(n=n, 
+                                  soc_min=0,
+                                  soc_max=3,
+                                  initial_soc=1.5,
+                                  p_min=0,
+                                  p_max=0.5,
+                                  l_raise_f=new_forecast["RAISE6SECRRP"],
+                                  l_lower_f=new_forecast["LOWER6SECRRP"],
+                                  l_raise_s=new_forecast["RAISE60SECRRP"],
+                                  l_lower_s=new_forecast["LOWER60SECRRP"],
+                                  l_raise_d=new_forecast["RAISE5MINRRP"],
+                                  l_lower_d=new_forecast["LOWER5MINRRP"])
+    m.Params.Threads = 1
+    m.Params.WorkLimit = 10
+    m.optimize()
+    
+    forecast_obj_vals.append(m.ObjVal)
+    
+print()
+```
+
+```python
+plt.figure(figsize=(12,7))
+
+plt.title("Histogram of objective values using 1000 random forecasts")
+plt.hist(forecast_obj_vals)
+plt.xlabel("Objective value/revenue (in $AUD)")
+plt.ylabel("Frequency")
+plt.gca().set_axisbelow(True)
+plt.grid(which='major', axis='y', color='lightgrey')
+```
+
+```python
+# Nothing interesting revealed by histogram
+relevant_df = sa_price_df[["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"]]
+
+plt.hist(relevant_df, range=(0, 1000), stacked=True)
+```
+
+```python
+
 ```
