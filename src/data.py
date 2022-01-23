@@ -121,7 +121,7 @@ def extract_sa_fcas_prices(data_path='data/'):
                          skiprows=i_indices[1],
                          nrows=(i_indices[2] - i_indices[1]-1))
 
-        sa_price_df = df.loc[df["REGIONID"] == "SA1", cols]
+        sa_price_df = sa_price_df.append(df.loc[df["REGIONID"] == "SA1", cols])
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
