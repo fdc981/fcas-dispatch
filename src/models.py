@@ -190,17 +190,17 @@ def make_cooptimisation_model(
 
     # in $AUD, lists
     if l_raise_s is None:
-        l_raise_s = data.get_sa_dispatch_data(T, "RAISE60SECRRP")
+        l_raise_s = data.get_sa_fcas_prices(T, "RAISE60SECRRP")
     if l_lower_s is None:
-        l_lower_s = data.get_sa_dispatch_data(T, "LOWER60SECRRP")
+        l_lower_s = data.get_sa_fcas_prices(T, "LOWER60SECRRP")
     if l_raise_d is None:
-        l_raise_d = data.get_sa_dispatch_data(T, "RAISE5MINRRP")
+        l_raise_d = data.get_sa_fcas_prices(T, "RAISE5MINRRP")
     if l_lower_d is None:
-        l_lower_d = data.get_sa_dispatch_data(T, "LOWER5MINRRP")
+        l_lower_d = data.get_sa_fcas_prices(T, "LOWER5MINRRP")
     if l_raise_f is None:
-        l_raise_f = data.get_sa_dispatch_data(T, "RAISE6SECRRP")
+        l_raise_f = data.get_sa_fcas_prices(T, "RAISE6SECRRP")
     if l_lower_f is None:
-        l_lower_f = data.get_sa_dispatch_data(T, "LOWER6SECRRP")
+        l_lower_f = data.get_sa_fcas_prices(T, "LOWER6SECRRP")
 
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
