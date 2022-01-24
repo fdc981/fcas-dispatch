@@ -56,8 +56,6 @@ def get_sa_fcas_prices(
         if start == -1:
             raise Exception("No data from " + str(start_datetime) + " found.")
 
-    print("start:", start)
-
     assert column_name in cols
     assert len(indices) % repeat == 0
 
