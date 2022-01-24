@@ -24,6 +24,7 @@ import pandas as pd
 import seaborn as sns
 import scipy
 import sys
+import datetime
 
 %load_ext autoreload
 %autoreload 2
@@ -31,7 +32,7 @@ import sys
 sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -126,11 +127,7 @@ sol = np.array(m.X).reshape((5, n)).transpose()
 display(pd.DataFrame(sol))
 ```
 
-<!-- #region tags=[] -->
-# Experiments
-<!-- #endregion -->
-
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ## Powerwall model
 <!-- #endregion -->
 
@@ -141,7 +138,7 @@ from src.models import make_powerwall_model
 %autoreload 2
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Adjusting big $M$
 <!-- #endregion -->
 
@@ -245,7 +242,7 @@ plt.plot(df["M"], df["Objective value"])
 plt.show()
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Adjusting $\epsilon$
 <!-- #endregion -->
 
@@ -275,7 +272,7 @@ with pd.option_context('display.max_rows', None,
 
 In the previous section higher node count was observed with $M = 7$. This is probably even if $b_{raise}^t = b_{lower}^t = 1$ then $P_{raise}^t, P_{lower}^t \leq M$, in practice .
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Initial SOC
 <!-- #endregion -->
 
@@ -314,7 +311,7 @@ ax2.tick_params(axis='y', labelcolor=color)
 plt.show()
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Presence of SOC constraint
 <!-- #endregion -->
 
@@ -378,7 +375,7 @@ plt.xticks(range(6, 26))
 plt.show()
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ### Why branch and bound only begins at $n \geq 23$
 <!-- #endregion -->
 
@@ -467,7 +464,7 @@ def tabulate_solution(m):
 
 ```python
 n = 30
-m = make_cooptimisation_model(n = n)
+m = make_cooptimisation_model(n = n, prices_from=np.datetime64("2021-12-11"))
 ```
 
 ```python
@@ -502,19 +499,18 @@ plt.plot(df.index, df["soc"])
 plt.rcParams.update({'font.size': 13})
 ```
 
+For this section, the optimisation was performed with parameters as given:
+
 ```python
 n = 24 * 60 // 5
+
 m = make_cooptimisation_model(n=n, 
                               soc_min=0,
                               soc_max=3,
                               initial_soc=1.5,
                               p_min=0,
-                              p_max=0.5)
-```
-
-```python
-# Limit processing power.
-m.setParam("Threads", 1)
+                              p_max=0.5,
+                              prices_from=np.datetime64("2021-12-11"))
 
 m.optimize()
 ```
@@ -524,19 +520,25 @@ print("Runtime:", m.Runtime)
 print("Node count:", m.NodeCount)
 ```
 
-```python
-df = tabulate_solution(m)
-```
+We can view the full solution:
 
 ```python
+df = tabulate_solution(m)
+
 with pd.option_context("display.max_rows", None, "display.max_columns", None) as p:
     display(df.round(3))
 ```
 
-```python
-import src.data as data
+Note that $P_{max}$ of power is dispatched for almost all the time (at least for the data for December 11th 2021):
 
-date_index = data.sa_price_df["SETTLEMENTDATE"].values
+```python
+df[[col for col in df.columns if 'p_' in col]].value_counts()
+```
+
+This means that the graph of the state of charge may give a glance of the optimal dispatch solution - shallower slopes indicate enablement of shorter response FCAS, and whether the line slopes up or down indicates whether lower or raise FCAS was dispatched.
+
+```python
+date_index = np.arange(np.datetime64("2021-12-11"), np.datetime64("2021-12-12"), np.timedelta64(5, 'm'))
 ```
 
 ```python
@@ -554,62 +556,9 @@ plt.show()
 ### Results for day-ahead optimisation
 <!-- #endregion -->
 
-```python
-cols = ["b_raise_f", "b_lower_f", "b_raise_s", "b_lower_s", "b_raise_d", "b_lower_d"]
-names = ["Raise 6 sec", "Lower 6 sec", "Raise 60 sec", "Lower 60 sec", "Raise 5 min", "Lower 5 min"]
+(This section analyses the solution generated in the previous section, please ensure all code blocks there have been run.)
 
-plt.figure(figsize=(12,7))
-
-plt.title("Enablement frequency")
-plt.bar(names, df[cols].sum())
-plt.xlabel("FCAS Product")
-plt.ylabel("Frequency")
-plt.gca().set_axisbelow(True)
-plt.grid(which='major', axis='y', color='lightgrey')
-
-plt.show()
-```
-
-```python
-import src.data as data
-
-cols = ["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"]
-
-plt.figure(figsize=(12,7))
-
-plt.title("FCAS prices for 2021-12-11")
-plt.plot(date_index, data.sa_price_df[cols])
-plt.xlabel("Date and time (MM-DD HH)")
-plt.ylabel("Price ($AUD per MWh)")
-plt.grid(which='major', color='lightgrey')
-plt.legend(cols)
-
-plt.show()
-```
-
-```python
-plt.figure(figsize=(12,7))
-
-plt.title("FCAS prices for 2021-12-11")
-plt.plot(data.sa_price_df["SETTLEMENTDATE"], data.sa_price_df[cols].max(axis=1))
-```
-
-```python
-argmax = []
-for i in data.sa_price_df.index:
-    argmax.append(cols[np.argmax(data.sa_price_df.loc[i, cols])])
-
-plt.figure(figsize=(12,7))
-
-plt.title("Number of times an FCAS product was at max price")
-plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec"], pd.value_counts(argmax))
-plt.xlabel("FCAS Product")
-plt.ylabel("Frequency")
-plt.gca().set_axisbelow(True)
-plt.grid(which='major', axis='y', color='lightgrey')
-
-plt.show()
-```
+The enablements for different FCAS can be highlighted at each trading interval for the graph of the state of charge over time.
 
 ```python
 plt.figure(figsize=(12,7))
@@ -643,16 +592,65 @@ plt.ylabel("State of charge (in MWh)")
 plt.show()
 ```
 
-```python
-cols = ["p_lower_f", "p_raise_f", "p_lower_s", "p_raise_s", "p_lower_d", "p_raise_d"]
-power_sum = df[cols].sum(axis=1)
-
-power_sum.value_counts()
-```
+The number of times the solution instructed dispatch for each FCAS was found and graphed.
 
 ```python
-power_sum[2]
+cols = ["b_raise_f", "b_lower_f", "b_raise_s", "b_lower_s", "b_raise_d", "b_lower_d"]
+names = ["Raise 6 sec", "Lower 6 sec", "Raise 60 sec", "Lower 60 sec", "Raise 5 min", "Lower 5 min"]
+
+plt.figure(figsize=(12,7))
+
+plt.title("Enablement frequency")
+plt.bar(names, df[cols].sum())
+plt.xlabel("FCAS Product")
+plt.ylabel("Frequency")
+plt.gca().set_axisbelow(True)
+plt.grid(which='major', axis='y', color='lightgrey')
+
+plt.show()
 ```
+
+Particular services are dispatched in particular times. In the case for December 11th 2021, the graph above shows frequent enablement of "Lower 60 sec" FCAS. This particular FCAS was also the highest-priced service for most of the day:
+
+```python
+cols = ["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"]
+
+# Extract one day of prices.
+price_df = pd.read_csv("../data/sa_fcas_prices.csv", parse_dates=["SETTLEMENTDATE"])
+price_df = price_df[price_df["SETTLEMENTDATE"] >= np.datetime64("2021-12-11")][:288]
+
+plt.figure(figsize=(12,7))
+
+plt.title("FCAS prices for 2021-12-11")
+plt.plot(date_index, price_df[cols])
+plt.xlabel("Date and time (MM-DD HH)")
+plt.ylabel("Price ($AUD per MWh)")
+plt.grid(which='major', color='lightgrey')
+plt.legend(cols)
+
+plt.show()
+```
+
+This can be confirmed by finding, for each FCAS, how many times it was at max price:
+
+```python
+argmax = []
+for i in price_df.index:
+    argmax.append(cols[np.argmax(price_df.loc[i, cols])])
+
+plt.figure(figsize=(12,7))
+
+plt.title("Number of times an FCAS product was at max price")
+plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec"], pd.value_counts(argmax))
+plt.xlabel("FCAS Product")
+plt.ylabel("Frequency")
+plt.gca().set_axisbelow(True)
+plt.grid(which='major', axis='y', color='lightgrey')
+
+plt.show()
+```
+
+Then, the state of charge graph can be highlighted again, but this time only for the enablements when it was for a service at max price. It is clear that for all but a small proportion of trading intervals, the state of charge was enabled at max price.
 
 ```python
 plt.figure(figsize=(12,7))
@@ -684,10 +682,22 @@ plt.show()
 ```
 
 <!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
-### Varying initial SOC
+### Varying parameters
+
+For this section, the following parameters are varied:
+
+- $SOC_{initial}$
+- $P_{max}$
+- $SOC_{max}$
 <!-- #endregion -->
 
 ```python
+from IPython.display import clear_output
+```
+
+
+
+```python jupyter={"outputs_hidden": true} tags=[]
 soc_params = np.linspace(0, 3, 100)
 soc_obj_vals = []
 n = 24 * 60 // 5
@@ -699,20 +709,22 @@ for initial_soc in soc_params:
                                   soc_max=3,
                                   initial_soc=initial_soc,
                                   p_min=0,
-                                  p_max=0.5)
+                                  p_max=0.5,
+                                  prices_from=np.datetime64("2021-12-11"))
     m.optimize()
     soc_obj_vals.append(m.ObjVal)
+
+clear_output()
+print("Done!")
 ```
 
 ```python
 plt.figure(figsize=(12,7))
-plt.rc('font', size=17)
 plt.title("Objective value (revenue) against initial SOC")
 plt.plot(soc_params, soc_obj_vals)
 plt.xlabel("Initial SOC (in MWh)")
 plt.ylabel("Objective value/Revenue (in $AUD)")
 plt.grid(which='major', color='lightgrey')
-plt.rc('font', size=13)
 ```
 
 ```python
@@ -726,16 +738,19 @@ for p_max in params:
                                   soc_max=3,
                                   initial_soc=1.5,
                                   p_min=0,
-                                  p_max=p_max)
+                                  p_max=p_max,
+                                  prices_from=np.datetime64("2021-12-11"))
     m.Params.Threads = 1
-    m.Params.WorkLimit = 8
+    m.Params.WorkLimit = 100
     m.optimize()
     obj_vals.append(m.ObjVal)
+    
+clear_output()
+print("Done!")
 ```
 
 ```python
 plt.figure(figsize=(12,7))
-plt.rc('font', size=17)
 plt.title("Objective value (revenue) with different P_max")
 plt.plot(params, obj_vals)
 plt.xlabel("P_max (in MW)")
@@ -743,7 +758,6 @@ plt.ylabel("Objective value/Revenue (in $AUD)")
 plt.grid(which='major', color='lightgrey')
 
 plt.show()
-plt.rc('font', size=13)
 ```
 
 ```python
@@ -757,16 +771,18 @@ for soc_max in socmax_params:
                                   soc_max=soc_max,
                                   initial_soc=1.5,
                                   p_min=0,
-                                  p_max=0.5)
+                                  p_max=0.5,
+                                  prices_from=np.datetime64("2021-12-11"))
     m.Params.Threads = 1
-    m.Params.WorkLimit = 8
     m.optimize()
     socmax_obj_vals.append(m.ObjVal)
+    
+clear_output()
+print("Done!")
 ```
 
 ```python
 plt.figure(figsize=(12,7))
-plt.rc('font', size=17)
 plt.title("Objective value (revenue) with different SOC_max")
 plt.plot(socmax_params, socmax_obj_vals)
 plt.xlabel("SOC_max (in MWh)")
@@ -774,219 +790,4 @@ plt.ylabel("Objective value/Revenue (in $AUD)")
 plt.grid(which='major', color='lightgrey')
 
 plt.show()
-plt.rc('font', size=13)
-```
-
-<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
-### Forecasting
-
-Requires existing daily dispatch data. This can be downloaded with `download.py`.
-<!-- #endregion -->
-
-```python
-import pathlib
-```
-
-```python
-help(data_path.iterdir)
-```
-
-```python
-filtered_filenames.sort()
-filtered_filenames[0]
-```
-
-```python
-data_path = pathlib.Path("../data/")
-data_path.mkdir(parents=True, exist_ok=True)
-
-cols = ["SETTLEMENTDATE", "RRP", "LOWERREGRRP", "RAISEREGRRP",
-        "LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP",
-        "LOWER5MINRRP", "RAISE5MINRRP"]
-
-sa_price_df = pd.DataFrame(columns = cols)
-
-filtered_filenames = [path for path in data_path.iterdir() if "CSV" in str(path) and str(path) < "../data/PUBLIC_DAILY_202112110000_20211212040503.CSV"]
-
-print(filtered_filenames)
-
-for csv_filename in filtered_filenames:
-    print("exporting from:", csv_filename)
-    i_indices = []
-
-    with open(csv_filename, 'r') as f:
-        contents = f.read()
-        for i, line in enumerate(contents.split('\n')):
-            if len(line) > 0 and line[0] == 'I':
-                i_indices.append(i)
-
-    df = pd.read_csv(csv_filename,
-                     skiprows=i_indices[1],
-                     nrows=(i_indices[2] - i_indices[1]-1))
-
-    new_df = df.loc[df["REGIONID"] == "SA1", cols]
-    new_df["SETTLEMENTDATE"] = pd.to_datetime(new_df["SETTLEMENTDATE"])
-    
-    sa_price_df = sa_price_df.append(new_df)
-```
-
-```python
-forecast = pd.DataFrame(columns=["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"])
-
-rng = np.random.default_rng(seed=1)
-
-for col_name in forecast.columns:
-    forecast[col_name] = [max(0, rng.normal(loc=sa_price_df[col_name].mean(),
-                                            scale=sa_price_df[col_name].std())) for _ in range(288)]
-```
-
-```python
-plt.figure(figsize=(12,7))
-plt.title("Generated FCAS price forecast")
-plt.plot(date_index, forecast)
-plt.legend(forecast.columns)
-plt.xlabel("Date and time (MM-DD HH)")
-plt.ylabel("Price ($AUD per MWh)")
-plt.grid(which='major', axis='y', color='lightgrey')
-
-plt.show()
-```
-
-```python
-m = make_cooptimisation_model(n=n, 
-                              soc_min=0,
-                              soc_max=3,
-                              initial_soc=1.5,
-                              p_min=0,
-                              p_max=0.5,
-                              l_raise_f=forecast["RAISE6SECRRP"],
-                              l_lower_f=forecast["LOWER6SECRRP"],
-                              l_raise_s=forecast["RAISE60SECRRP"],
-                              l_lower_s=forecast["LOWER60SECRRP"],
-                              l_raise_d=forecast["RAISE5MINRRP"],
-                              l_lower_d=forecast["LOWER5MINRRP"])
-m.Params.Threads = 1
-m.optimize()
-```
-
-```python
-df = tabulate_solution(m)
-```
-
-```python
-plt.figure(figsize=(12,7))
-plt.title("State of charge over time")
-plt.plot(date_index, df["soc"])
-
-b_lower_f_plotted = 0
-b_raise_f_plotted = 0
-b_lower_s_plotted = 0
-b_raise_s_plotted = 0
-b_lower_d_plotted = 0
-b_raise_d_plotted = 0
-
-# note: lw=0 to ensure smooth borders
-for i in range(len(date_index)-1):
-    if df.loc[i, "b_lower_f"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='blue', lw=0, label = "_"*b_lower_f_plotted + "Lower 6 sec")
-        b_lower_f_plotted = 1
-    if df.loc[i, "b_raise_f"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
-        b_raise_f_plotted = 1
-    if df.loc[i, "b_lower_s"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
-        b_lower_s_plotted = 1
-    if df.loc[i, "b_raise_s"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
-        b_raise_s_plotted = 1
-    if df.loc[i, "b_lower_d"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='purple', lw=0, label = "_"*b_lower_d_plotted + "Lower 5 min")
-        b_lower_d_plotted = 1
-    if df.loc[i, "b_raise_d"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='brown', lw=0, label = "_"*b_raise_d_plotted + "Raise 5 min")
-        b_raise_d_plotted = 1
-        
-plt.legend()
-plt.xlabel("Index of trading interval")
-plt.ylabel("State of charge (in MWh)")
-plt.show()
-```
-
-```python
-cols_f = forecast.columns
-
-argmax = []
-for i in forecast.index:
-    argmax.append(cols_f[np.argmax(forecast.loc[i, cols_f])])
-
-plt.figure(figsize=(12,7))
-
-plt.title("Number of times an FCAS product was at max price")
-plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec", "Lower 6 sec", "Lower 5 min", "Raise 5 min"], pd.value_counts(argmax))
-plt.xlabel("FCAS Product")
-plt.ylabel("Frequency")
-plt.gca().set_axisbelow(True)
-plt.grid(which='major', axis='y', color='lightgrey')
-
-plt.show()
-```
-
-```python
-df[[name for name in df.columns if "p_" in name]].sum(axis=1)
-```
-
-```python
-forecast_obj_vals = []
-
-print("seed:", end='')
-for seed in range(1000):
-    print(seed, end=' ')
-    new_forecast = pd.DataFrame(columns=["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"])
-
-    rng = np.random.default_rng(seed=seed)
-
-    for col_name in new_forecast.columns:
-        new_forecast[col_name] = [max(0, rng.normal(loc=sa_price_df[col_name].mean(),
-                                                    scale=sa_price_df[col_name].std())) for _ in range(288)]
-    m = make_cooptimisation_model(n=n, 
-                                  soc_min=0,
-                                  soc_max=3,
-                                  initial_soc=1.5,
-                                  p_min=0,
-                                  p_max=0.5,
-                                  l_raise_f=new_forecast["RAISE6SECRRP"],
-                                  l_lower_f=new_forecast["LOWER6SECRRP"],
-                                  l_raise_s=new_forecast["RAISE60SECRRP"],
-                                  l_lower_s=new_forecast["LOWER60SECRRP"],
-                                  l_raise_d=new_forecast["RAISE5MINRRP"],
-                                  l_lower_d=new_forecast["LOWER5MINRRP"])
-    m.Params.Threads = 1
-    m.Params.WorkLimit = 10
-    m.optimize()
-    
-    forecast_obj_vals.append(m.ObjVal)
-    
-print()
-```
-
-```python
-plt.figure(figsize=(12,7))
-
-plt.title("Histogram of objective values using 1000 random forecasts")
-plt.hist(forecast_obj_vals)
-plt.xlabel("Objective value/revenue (in $AUD)")
-plt.ylabel("Frequency")
-plt.gca().set_axisbelow(True)
-plt.grid(which='major', axis='y', color='lightgrey')
-```
-
-```python
-# Nothing interesting revealed by histogram
-relevant_df = sa_price_df[["LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"]]
-
-plt.hist(relevant_df, range=(0, 1000), stacked=True)
-```
-
-```python
-
 ```
