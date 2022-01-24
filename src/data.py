@@ -108,7 +108,10 @@ def extract_sa_fcas_prices(data_path='data/'):
 
     sa_price_df = pd.DataFrame(columns=cols)
 
-    for csv_filename in pathlib.Path(data_path).glob("PUBLIC_DAILY*.CSV"):
+    csv_filenames = [p for p in pathlib.Path(data_path).glob("PUBLIC_DAILY*.CSV")]
+    csv_filenames.sort()
+
+    for csv_filename in csv_filenames:
         i_indices = []
 
         with open(csv_filename, 'r') as f:
@@ -124,5 +127,7 @@ def extract_sa_fcas_prices(data_path='data/'):
         sa_price_df = sa_price_df.append(df.loc[df["REGIONID"] == "SA1", cols])
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
+
+    assert sa_price_df["SETTLEMENTDATE"].is_monotonic_increasing
 
     return sa_price_df
