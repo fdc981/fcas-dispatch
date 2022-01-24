@@ -31,8 +31,9 @@ def get_sa_fcas_prices(
         repeat (int): number of repetitions of the entries.
         csv_path (str): the relative path string of the csv file containing SA
                         FCAS prices.
-        start_datetime (Date or None: the date and time of the first settlement
-                                      to be retrieved.
+        start_datetime (None or np.datetime64 or Date): the date and time of
+            the first settlement to be retrieved. If None, retrieves the first
+            `len(indices)` entries from `csv_path`.
 
     Returns:
         a dictionary of dispatch prices.
@@ -40,13 +41,28 @@ def get_sa_fcas_prices(
     cols = ["SETTLEMENTDATE", "RRP", "LOWERREGRRP", "RAISEREGRRP",
             "LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP",
             "LOWER5MINRRP", "RAISE5MINRRP"]
-    sa_price_df = pd.read_csv(csv_path)
+    sa_price_df = pd.read_csv(csv_path, parse_dates=["SETTLEMENTDATE"])
+
+    if start_datetime is None:
+        start = 0
+    else:
+        start = -1
+
+        for i in range(len(sa_price_df)):
+            if start_datetime <= sa_price_df.loc[i, "SETTLEMENTDATE"]:
+                start = i
+                break
+
+        if start == -1:
+            raise Exception("No data from " + str(start_datetime) + " found.")
+
+    print("start:", start)
 
     assert column_name in cols
     assert len(indices) % repeat == 0
 
     num = len(indices) // repeat
-    values = np.repeat(sa_price_df[column_name].values[:num], repeat)
+    values = np.repeat(sa_price_df[column_name].values[start:start+num], repeat)
 
     assert len(values) == num * repeat
 
