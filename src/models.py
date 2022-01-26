@@ -134,7 +134,8 @@ def make_cooptimisation_model(
         p_min=0,
         p_max=7,
         soc_min=0.35*13.5,
-        soc_max=13.5
+        soc_max=13.5,
+        prices_from=None
 ):
     """Creates a Gurobi model for finding the dispatch maximising profit when
     participating in all contingency FCAS markets.
@@ -156,6 +157,9 @@ def make_cooptimisation_model(
         p_max: maximum charge/discharge power limit (in MW)
         soc_min: the minimum amount of stored energy (in MWh)
         soc_max: the maximum amount of stored energy (in MWh)
+        prices_from: the start date to retrieve prices from
+            `data/sa_fcas_prices.csv`. If None, retrieves the first `n` prices
+            from the price CSV.
 
     Notes:
         [1] For each of the `l_raise_*` and `l_lower_*` parameters, if it is
@@ -190,17 +194,17 @@ def make_cooptimisation_model(
 
     # in $AUD, lists
     if l_raise_s is None:
-        l_raise_s = data.get_sa_dispatch_data(T, "RAISE60SECRRP")
+        l_raise_s = data.get_sa_fcas_prices(T, "RAISE60SECRRP", start_datetime=prices_from)
     if l_lower_s is None:
-        l_lower_s = data.get_sa_dispatch_data(T, "LOWER60SECRRP")
+        l_lower_s = data.get_sa_fcas_prices(T, "LOWER60SECRRP", start_datetime=prices_from)
     if l_raise_d is None:
-        l_raise_d = data.get_sa_dispatch_data(T, "RAISE5MINRRP")
+        l_raise_d = data.get_sa_fcas_prices(T, "RAISE5MINRRP", start_datetime=prices_from)
     if l_lower_d is None:
-        l_lower_d = data.get_sa_dispatch_data(T, "LOWER5MINRRP")
+        l_lower_d = data.get_sa_fcas_prices(T, "LOWER5MINRRP", start_datetime=prices_from)
     if l_raise_f is None:
-        l_raise_f = data.get_sa_dispatch_data(T, "RAISE6SECRRP")
+        l_raise_f = data.get_sa_fcas_prices(T, "RAISE6SECRRP", start_datetime=prices_from)
     if l_lower_f is None:
-        l_lower_f = data.get_sa_dispatch_data(T, "LOWER6SECRRP")
+        l_lower_f = data.get_sa_fcas_prices(T, "LOWER6SECRRP", start_datetime=prices_from)
 
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max

@@ -32,9 +32,11 @@ parso==0.8.3
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.4.0
+ply==3.11
 prompt-toolkit==3.0.23
 ptyprocess==0.7.0
 Pygments==2.10.0
+Pyomo==6.1.2
 pyparsing==3.0.6
 pyrsistent==0.18.0
 python-dateutil==2.8.2
