@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.5
+      jupytext_version: 1.13.6
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -15,6 +15,8 @@ jupyter:
 
 <!-- #region tags=[] -->
 # Data analysis
+
+Exploratory data analysis notebook for the different public CSV data
 <!-- #endregion -->
 
 ```python
@@ -22,12 +24,18 @@ import pandas as pd
 import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
+import requests
+import bs4
+import re
 
 %load_ext autoreload
 %autoreload 2
+
+import sys
+sys.path.insert(0, "../")
 ```
 
-<!-- #region tags=[] -->
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ### Scraper JSON
 <!-- #endregion -->
 
@@ -86,7 +94,7 @@ for row in axes:
 fig.tight_layout()
 ```
 
-<!-- #region tags=[] -->
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ### 5 minute dispatch data CSV
 <!-- #endregion -->
 
@@ -163,43 +171,12 @@ for i, table in enumerate(dispatch_prices):
 plt.plot(range(len(lower5minrrp)), lower5minrrp)
 ```
 
+<!-- #region tags=[] -->
 ### Daily historical dispatch data CSV
+<!-- #endregion -->
 
 ```python
-csv_filename = str(pathlib.Path.home() / "Downloads/data/PUBLIC_DAILY_202112140000_20211215040504.CSV")
-```
-
-```python
-i_indices = []
-
-with open(csv_filename, 'r') as f:
-    contents = f.read()
-    for i, line in enumerate(contents.split('\n')):
-        if len(line) > 0 and line[0] == 'I':
-            i_indices.append(i)
-```
-
-```python
-dfs = []
-
-for i in range(len(i_indices) - 1):
-    dfs.append(pd.read_csv(csv_filename, skiprows=i_indices[i], nrows=(i_indices[i+1] - i_indices[i]-1)))
-```
-
-```python
-# TODO: check whether dfs[1] or dfs[2] contains the relevant prices?
-
-df1 = dfs[1]
-df2 = dfs[2]
-```
-
-```python
-df1["REGIONID"].value_counts()
-```
-
-```python
-sa_price_df = df1.loc[df1["REGIONID"].str.contains("SA"),
-                      ["SETTLEMENTDATE", "RRP", "LOWERREGRRP", "RAISEREGRRP", "LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP", "LOWER5MINRRP", "RAISE5MINRRP"]]
+sa_price_df = pd.read_csv("../data/sa_fcas_prices.csv", index_col=0)
 ```
 
 ```python
