@@ -67,10 +67,11 @@ def get_sa_fcas_prices(
     return dict(zip(indices, values))
 
 
-def download_daily_reports(out_path="data/", skip=True, output=True):
-    """Download daily reports into the path `out_path`.
+def download_reports(link, out_path="data/", skip=True, output=True):
+    """Download reports from the `link` into the path `out_path`.
 
     Args:
+        link (str): link to reports from the NEMWEB
         out_path (str): relative path string of the output folder
         skip (bool): if true, then skip already downloaded files.
         output (bool): if true, outputs messages
@@ -78,7 +79,7 @@ def download_daily_reports(out_path="data/", skip=True, output=True):
     Returns:
         None.
     """
-    response = requests.get("https://www.nemweb.com.au/REPORTS/CURRENT/Daily_Reports/")
+    response = requests.get(link)
     soup = bs4.BeautifulSoup(response.text)
     zip_links = soup.find_all('a', string=re.compile('.zip'))
 
@@ -88,7 +89,8 @@ def download_daily_reports(out_path="data/", skip=True, output=True):
     for a_tag in zip_links:
         filename = a_tag.attrs['href'].split('/')[-1]
 
-        if not pathlib.Path("data/" + filename.replace("zip", "CSV")).exists() or not skip:
+        if (not pathlib.Path("data/" + filename.replace("zip", "CSV")).exists()
+           and not pathlib.Path("data/" + filename).exists()) or not skip:
             if output:
                 print("downloading", filename)
             url = "https://www.nemweb.com.au" + a_tag.attrs['href']
