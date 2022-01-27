@@ -1,9 +1,4 @@
-"""Data retrieval functions.
-
-Attributes:
-    cols: array of expected columns
-    sa_price_df: DataFrame of prices.
-"""
+"""Functions for data retrieval and processing."""
 
 import numpy as np
 import pandas as pd
