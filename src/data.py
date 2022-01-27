@@ -89,10 +89,19 @@ def download_reports(link, out_path="data/", skip=True, output=True):
             if output:
                 print("downloading", filename)
             url = "https://www.nemweb.com.au" + a_tag.attrs['href']
-            response = requests.get(url)
+            success = False
 
-            with open(f"{out_path}/{filename}", 'wb') as f:
-                f.write(response.content)
+            while not success:
+                response = requests.get(url)
+
+                if response.status_code == 200:
+                    with open(f"{out_path}/{filename}", 'wb') as f:
+                        f.write(response.content)
+                    success = True
+                else:
+                    choice = input(f"Download request returned with status {response.status_code}. Retry (y/N)?")
+                    if choice != 'y':
+                        success = True
 
     # Extract and remove each zip file
     zip_paths = pathlib.Path(out_path).glob('*.zip')
