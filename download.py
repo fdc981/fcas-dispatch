@@ -1,8 +1,11 @@
-from src.data import download_reports, extract_sa_fcas_prices
+from src.data import download_reports, extract_sa_fcas_data
 
-download_reports("https://www.nemweb.com.au/REPORTS/CURRENT/Daily_Reports/")
-download_reports("https://nemweb.com.au/Reports/Current/Settlements/")
+download_reports("https://nemweb.com.au/Reports/Current/Public_Prices/")
 
-df = extract_sa_fcas_prices()
+print("Extracting FCAS data... ", end="")
+
+df = extract_sa_fcas_data()
 df.reset_index(drop=True, inplace=True)
-df.to_csv("data/sa_fcas_prices.csv")
+df.to_csv("data/sa_fcas_data.csv", index=False)
+
+print("done.")
