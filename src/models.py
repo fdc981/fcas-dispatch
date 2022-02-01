@@ -6,8 +6,6 @@ import src.data as data
 from decimal import Decimal
 
 
-# TODO: add the efficiency coefficients to each model
-
 def make_powerwall_model(n=12, M1=14, M2=14, epsilon=10**(-6), initial_soc=6):
     """Creates an optimisation problem for dispatch with a Tesla Powerwall."""
 
@@ -158,7 +156,7 @@ def make_cooptimisation_model(
         soc_min: the minimum amount of stored energy (in MWh)
         soc_max: the maximum amount of stored energy (in MWh)
         prices_from: the start date to retrieve prices from
-            `data/sa_fcas_prices.csv`. If None, retrieves the first `n` prices
+            `data/sa_fcas_data.csv`. If None, retrieves the first `n` prices
             from the price CSV.
 
     Notes:
@@ -194,17 +192,17 @@ def make_cooptimisation_model(
 
     # in $AUD, lists
     if l_raise_s is None:
-        l_raise_s = data.get_sa_fcas_prices(T, "RAISE60SECRRP", start_datetime=prices_from)
+        l_raise_s = data.get_sa_fcas_data(T, "RAISE60SECRRP", start_datetime=prices_from)
     if l_lower_s is None:
-        l_lower_s = data.get_sa_fcas_prices(T, "LOWER60SECRRP", start_datetime=prices_from)
+        l_lower_s = data.get_sa_fcas_data(T, "LOWER60SECRRP", start_datetime=prices_from)
     if l_raise_d is None:
-        l_raise_d = data.get_sa_fcas_prices(T, "RAISE5MINRRP", start_datetime=prices_from)
+        l_raise_d = data.get_sa_fcas_data(T, "RAISE5MINRRP", start_datetime=prices_from)
     if l_lower_d is None:
-        l_lower_d = data.get_sa_fcas_prices(T, "LOWER5MINRRP", start_datetime=prices_from)
+        l_lower_d = data.get_sa_fcas_data(T, "LOWER5MINRRP", start_datetime=prices_from)
     if l_raise_f is None:
-        l_raise_f = data.get_sa_fcas_prices(T, "RAISE6SECRRP", start_datetime=prices_from)
+        l_raise_f = data.get_sa_fcas_data(T, "RAISE6SECRRP", start_datetime=prices_from)
     if l_lower_f is None:
-        l_lower_f = data.get_sa_fcas_prices(T, "LOWER6SECRRP", start_datetime=prices_from)
+        l_lower_f = data.get_sa_fcas_data(T, "LOWER6SECRRP", start_datetime=prices_from)
 
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
