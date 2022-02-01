@@ -8,13 +8,14 @@ import re
 import shutil
 import os
 import requests
+from src.utils import extract_tables
 
 
-def get_sa_fcas_prices(
+def get_sa_fcas_data(
         indices: list,
         column_name: str,
         repeat: int = 1,
-        csv_path: str = "../data/sa_fcas_prices.csv",
+        csv_path: str = "../data/sa_fcas_data.csv",
         start_datetime=None
 ) -> dict:
     """Retrieve some daily dispatch data.
@@ -111,40 +112,35 @@ def download_reports(link, out_path="data/", skip=True, output=True):
         os.remove(str(path))
 
 
-def extract_sa_fcas_prices(data_path='data/'):
-    """Extract the SA FCAS prices from the public daily dispatch data available
-    at `data_path`.
+def extract_sa_fcas_data(data_path='data/'):
+    """Extract the SA FCAS data from the daily trading and dispatch price data
+    downloaded under `data_path`.
 
     Args:
-        data_path: the relative path string of the folder containing daily
-                   dispatch data CSVs.
+        data_path: the relative path string of the folder containing trading
+            and dispatch data CSVs.
 
     Returns:
-        DataFrame of all SA FCAS prices.
+        DataFrame of all SA FCAS prices, (FCAS trapezium-adjusted)
+        availabilities, and dispatch amounts.
     """
-    cols = ["SETTLEMENTDATE", "RRP", "LOWERREGRRP", "RAISEREGRRP",
-            "LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP",
-            "LOWER5MINRRP", "RAISE5MINRRP"]
+    services = ["RAISE6SEC", "LOWER6SEC", "RAISE60SEC", "LOWER60SEC",
+                "RAISE5MIN", "LOWER5MIN", "RAISEREG", "LOWERREG"]
+
+    cols = ["SETTLEMENTDATE", "RRP"] \
+        + [s + "RRP" for s in services] \
+        + [s + "ACTUALAVAILABILITY" for s in services] \
+        + [s + "DISPATCH" for s in services if "REG" not in s]
 
     sa_price_df = pd.DataFrame(columns=cols)
 
-    csv_filenames = [p for p in pathlib.Path(data_path).glob("PUBLIC_DAILY*.CSV")]
+    csv_filenames = [p for p in pathlib.Path(data_path).glob("PUBLIC_PRICES*.CSV")]
     csv_filenames.sort()
 
     for csv_filename in csv_filenames:
-        i_indices = []
+        df = extract_tables(str(csv_filename))[1]
 
-        with open(csv_filename, 'r') as f:
-            contents = f.read()
-            for i, line in enumerate(contents.split('\n')):
-                if len(line) > 0 and line[0] == 'I':
-                    i_indices.append(i)
-
-        df = pd.read_csv(csv_filename,
-                         skiprows=i_indices[1],
-                         nrows=(i_indices[2] - i_indices[1]-1))
-
-        sa_price_df = sa_price_df.append(df.loc[df["REGIONID"] == "SA1", cols])
+        sa_price_df = pd.concat([sa_price_df, df.loc[df["REGIONID"] == "SA1", cols]])
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
