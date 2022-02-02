@@ -130,7 +130,7 @@ def extract_sa_fcas_data(data_path='data/'):
     cols = ["SETTLEMENTDATE", "RRP"] \
         + [s + "RRP" for s in services] \
         + [s + "ACTUALAVAILABILITY" for s in services] \
-        + [s + "DISPATCH" for s in services if "REG" not in s]
+        + [s + "LOCALDISPATCH" for s in services if "REG" not in s]
 
     sa_price_df = pd.DataFrame(columns=cols)
 
