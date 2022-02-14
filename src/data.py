@@ -1,9 +1,4 @@
-"""Data retrieval functions.
-
-Attributes:
-    cols: array of expected columns
-    sa_price_df: DataFrame of prices.
-"""
+"""Functions for data retrieval and processing."""
 
 import numpy as np
 import pandas as pd
@@ -13,13 +8,14 @@ import re
 import shutil
 import os
 import requests
+from src.utils import extract_tables
 
 
-def get_sa_fcas_prices(
+def get_sa_fcas_data(
         indices: list,
         column_name: str,
         repeat: int = 1,
-        csv_path: str = "../data/sa_fcas_prices.csv",
+        csv_path: str = "../data/sa_fcas_data.csv",
         start_datetime=None
 ) -> dict:
     """Retrieve some daily dispatch data.
@@ -67,10 +63,11 @@ def get_sa_fcas_prices(
     return dict(zip(indices, values))
 
 
-def download_daily_reports(out_path="data/", skip=True, output=True):
-    """Download daily reports into the path `out_path`.
+def download_reports(link, out_path="data/", skip=True, output=True):
+    """Download reports from the `link` into the path `out_path`.
 
     Args:
+        link (str): link to reports from the NEMWEB
         out_path (str): relative path string of the output folder
         skip (bool): if true, then skip already downloaded files.
         output (bool): if true, outputs messages
@@ -78,7 +75,7 @@ def download_daily_reports(out_path="data/", skip=True, output=True):
     Returns:
         None.
     """
-    response = requests.get("https://www.nemweb.com.au/REPORTS/CURRENT/Daily_Reports/")
+    response = requests.get(link)
     soup = bs4.BeautifulSoup(response.text)
     zip_links = soup.find_all('a', string=re.compile('.zip'))
 
@@ -88,14 +85,24 @@ def download_daily_reports(out_path="data/", skip=True, output=True):
     for a_tag in zip_links:
         filename = a_tag.attrs['href'].split('/')[-1]
 
-        if not pathlib.Path("data/" + filename.replace("zip", "CSV")).exists() or not skip:
+        if (not pathlib.Path("data/" + filename.replace("zip", "CSV")).exists()
+           and not pathlib.Path("data/" + filename).exists()) or not skip:
             if output:
                 print("downloading", filename)
             url = "https://www.nemweb.com.au" + a_tag.attrs['href']
-            response = requests.get(url)
+            success = False
 
-            with open(f"{out_path}/{filename}", 'wb') as f:
-                f.write(response.content)
+            while not success:
+                response = requests.get(url)
+
+                if response.status_code == 200:
+                    with open(f"{out_path}/{filename}", 'wb') as f:
+                        f.write(response.content)
+                    success = True
+                else:
+                    choice = input(f"Download request returned with status {response.status_code}. Retry (y/N)?")
+                    if choice != 'y':
+                        success = True
 
     # Extract and remove each zip file
     zip_paths = pathlib.Path(out_path).glob('*.zip')
@@ -105,40 +112,35 @@ def download_daily_reports(out_path="data/", skip=True, output=True):
         os.remove(str(path))
 
 
-def extract_sa_fcas_prices(data_path='data/'):
-    """Extract the SA FCAS prices from the public daily dispatch data available
-    at `data_path`.
+def extract_sa_fcas_data(data_path='data/'):
+    """Extract the SA FCAS data from the daily trading and dispatch price data
+    downloaded under `data_path`.
 
     Args:
-        data_path: the relative path string of the folder containing daily
-                   dispatch data CSVs.
+        data_path: the relative path string of the folder containing trading
+            and dispatch data CSVs.
 
     Returns:
-        DataFrame of all SA FCAS prices.
+        DataFrame of all SA FCAS prices, (FCAS trapezium-adjusted)
+        availabilities, and dispatch amounts.
     """
-    cols = ["SETTLEMENTDATE", "RRP", "LOWERREGRRP", "RAISEREGRRP",
-            "LOWER6SECRRP", "RAISE6SECRRP", "LOWER60SECRRP", "RAISE60SECRRP",
-            "LOWER5MINRRP", "RAISE5MINRRP"]
+    services = ["RAISE6SEC", "LOWER6SEC", "RAISE60SEC", "LOWER60SEC",
+                "RAISE5MIN", "LOWER5MIN", "RAISEREG", "LOWERREG"]
+
+    cols = ["SETTLEMENTDATE", "RRP"] \
+        + [s + "RRP" for s in services] \
+        + [s + "ACTUALAVAILABILITY" for s in services] \
+        + [s + "LOCALDISPATCH" for s in services if "REG" not in s]
 
     sa_price_df = pd.DataFrame(columns=cols)
 
-    csv_filenames = [p for p in pathlib.Path(data_path).glob("PUBLIC_DAILY*.CSV")]
+    csv_filenames = [p for p in pathlib.Path(data_path).glob("PUBLIC_PRICES*.CSV")]
     csv_filenames.sort()
 
     for csv_filename in csv_filenames:
-        i_indices = []
+        df = extract_tables(str(csv_filename))[1]
 
-        with open(csv_filename, 'r') as f:
-            contents = f.read()
-            for i, line in enumerate(contents.split('\n')):
-                if len(line) > 0 and line[0] == 'I':
-                    i_indices.append(i)
-
-        df = pd.read_csv(csv_filename,
-                         skiprows=i_indices[1],
-                         nrows=(i_indices[2] - i_indices[1]-1))
-
-        sa_price_df = sa_price_df.append(df.loc[df["REGIONID"] == "SA1", cols])
+        sa_price_df = pd.concat([sa_price_df, df.loc[df["REGIONID"] == "SA1", cols]])
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
