@@ -168,7 +168,7 @@ def make_cooptimisation_model(
     F = F_lower + F_raise
 
     delta_t = {
-        "lower_6_sec": 5 / 60,
+        "lower_6_sec": 6 / 60 / 60,
         "lower_60_sec": 1 / 60,
         "lower_5_min": 5 / 60,
         "raise_6_sec": 6 / 60 / 60,
