@@ -25,6 +25,7 @@ import seaborn as sns
 import scipy
 import sys
 import datetime
+from src.utils import *
 
 %load_ext autoreload
 %autoreload 2
@@ -32,7 +33,7 @@ import datetime
 sys.path.insert(0, "../")
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Initial problem model
 <!-- #endregion -->
 
@@ -127,7 +128,7 @@ sol = np.array(m.X).reshape((5, n)).transpose()
 display(pd.DataFrame(sol))
 ```
 
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
 ## Powerwall model
 <!-- #endregion -->
 
@@ -175,6 +176,7 @@ results = []
 
 for M in [7] + [10**i for i in range(1, 10)]:
     m = make_powerwall_model(n=23, M1=M, M2=M)
+    m.Params.Threads = 1
     m.optimize()
     results.append([M, m.NodeCount, m.Runtime])
 
@@ -404,61 +406,7 @@ from src.models import make_cooptimisation_model
 from decimal import Decimal
 ```
 
-```python tags=[]
-def tabulate_solution(m):
-    """Tabulate the solution produced by a model. Returns a DataFrame."""
-    n = len([v for v in m.getVars() if "p_raise_d" in v.VarName])
-
-    T = [i for i in range(n)]
-
-    p_raise_s = [m.getVarByName(f"p_raise_s[{i}]").x for i in T]
-    p_lower_s = [m.getVarByName(f"p_lower_s[{i}]").x for i in T]
-
-    p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-    p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-
-    p_raise_f = [(m.getVarByName(f"p_raise_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-    p_lower_f = [(m.getVarByName(f"p_lower_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-
-    b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in T]
-    b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in T]
-
-    b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-    b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-
-    b_raise_f = [(m.getVarByName(f"b_raise_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-    b_lower_f = [(m.getVarByName(f"b_lower_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-
-    soc = [m.getVarByName(f"soc[{i}]").x for i in T]
-
-    df = pd.DataFrame(columns = ["p_raise_f", "b_raise_f", "p_lower_f", "b_lower_f",
-                                 "p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s",
-                                 "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T)
-
-    df["p_raise_s"] = p_raise_s
-    df["p_lower_s"] = p_lower_s
-
-    df["p_raise_d"] = p_raise_d
-    df["p_lower_d"] = p_lower_d
-
-    df["p_raise_f"] = p_raise_f
-    df["p_lower_f"] = p_lower_f
-
-    df["b_raise_s"] = b_raise_s
-    df["b_lower_s"] = b_lower_s
-
-    df["b_raise_d"] = b_raise_d
-    df["b_lower_d"] = b_lower_d
-
-    df["b_raise_f"] = b_raise_f
-    df["b_lower_f"] = b_lower_f
-
-    df["soc"] = soc
-    
-    return df
-```
-
-<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ### Initial experimentation
 <!-- #endregion -->
 
@@ -491,7 +439,7 @@ with pd.option_context("display.max_rows", None, "display.max_columns", None) as
 plt.plot(df.index, df["soc"])
 ```
 
-<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ### Day-ahead optimisation
 <!-- #endregion -->
 
@@ -532,7 +480,7 @@ with pd.option_context("display.max_rows", None, "display.max_columns", None) as
 Note that $P_{max}$ of power is dispatched for almost all the time (at least for the data for December 11th 2021):
 
 ```python
-df[[col for col in df.columns if 'p_' in col]].value_counts()
+df[[col for col in df.columns if 'dispatch' in col]].value_counts()
 ```
 
 This means that the graph of the state of charge may give a glance of the optimal dispatch solution - shallower slopes indicate enablement of shorter response FCAS, and whether the line slopes up or down indicates whether lower or raise FCAS was dispatched.
@@ -552,7 +500,7 @@ plt.grid(which='major', color='lightgrey')
 plt.show()
 ```
 
-<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true -->
+<!-- #region tags=[] jp-MarkdownHeadingCollapsed=true jp-MarkdownHeadingCollapsed=true tags=[] -->
 ### Results for day-ahead optimisation
 <!-- #endregion -->
 
@@ -561,47 +509,18 @@ plt.show()
 The enablements for different FCAS can be highlighted at each trading interval for the graph of the state of charge over time.
 
 ```python
-plt.figure(figsize=(12,7))
-plt.title("State of charge over time (enablements highlighted)")
-plt.plot(date_index, df["soc"])
-
-b_raise_f_plotted = 0
-b_lower_s_plotted = 0
-b_raise_s_plotted = 0
-b_raise_d_plotted = 0
-
-# note: lw=0 to ensure smooth borders
-for i in range(len(date_index)-1):
-    if df.loc[i, "b_raise_f"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
-        b_raise_f_plotted = 1
-    if df.loc[i, "b_lower_s"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
-        b_lower_s_plotted = 1
-    if df.loc[i, "b_raise_s"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
-        b_raise_s_plotted = 1
-    if df.loc[i, "b_raise_d"] == 1:
-        plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='brown', lw=0, label = "_"*b_raise_d_plotted + "Raise 5 min")
-        b_raise_d_plotted = 1
-
-plt.legend()
-plt.xlabel("Index of trading interval")
-plt.ylabel("State of charge (in MWh)")
-        
-plt.show()
+show_solution(m)
 ```
 
 The number of times the solution instructed dispatch for each FCAS was found and graphed.
 
 ```python
-cols = ["b_raise_f", "b_lower_f", "b_raise_s", "b_lower_s", "b_raise_d", "b_lower_d"]
-names = ["Raise 6 sec", "Lower 6 sec", "Raise 60 sec", "Lower 60 sec", "Raise 5 min", "Lower 5 min"]
+names = ["raise_6_sec", "lower_6_sec", "raise_60_sec", "lower_60_sec", "raise_5_min", "lower_5_min"]
 
 plt.figure(figsize=(12,7))
 
 plt.title("Enablement frequency")
-plt.bar(names, df[cols].sum())
+plt.bar(names, df[[n + " enabled" for n in names]].sum())
 plt.xlabel("FCAS Product")
 plt.ylabel("Frequency")
 plt.gca().set_axisbelow(True)
@@ -641,7 +560,7 @@ for i in price_df.index:
 plt.figure(figsize=(12,7))
 
 plt.title("Number of times an FCAS product was at max price")
-plt.bar(["Lower 60 sec", "Raise 6 sec", "Raise 60 sec"], pd.value_counts(argmax))
+plt.bar(pd.value_counts(argmax).index, pd.value_counts(argmax).values)
 plt.xlabel("FCAS Product")
 plt.ylabel("Frequency")
 plt.gca().set_axisbelow(True)
@@ -664,13 +583,13 @@ b_raise_d_plotted = 0
 
 # note: lw=0 to ensure smooth borders
 for i in range(len(date_index)-1):
-    if df.loc[i, "b_raise_f"] == 1 and argmax[i] == "RAISE6SECRRP":
+    if df.loc[i, "raise_6_sec enabled"] == 1 and argmax[i] == "RAISE6SECRRP":
         plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='orange', lw=0, label = "_"*b_raise_f_plotted + "Raise 6 sec")
         b_raise_f_plotted = 1
-    if df.loc[i, "b_lower_s"] == 1 and argmax[i] == "LOWER60SECRRP":
+    if df.loc[i, "lower_60_sec enabled"] == 1 and argmax[i] == "LOWER60SECRRP":
         plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='green', lw=0, label = "_"*b_lower_s_plotted + "Lower 60 sec")
         b_lower_s_plotted = 1
-    if df.loc[i, "b_raise_s"] == 1 and argmax[i] == "RAISE60SECRRP":
+    if df.loc[i, "raise_60_sec enabled"] == 1 and argmax[i] == "RAISE60SECRRP":
         plt.axvspan(date_index[i], date_index[i+1], alpha=0.2, color='red', lw=0, label = "_"*b_raise_s_plotted + "Raise 60 sec")
         b_raise_s_plotted = 1
 
@@ -697,7 +616,7 @@ from IPython.display import clear_output
 
 
 
-```python jupyter={"outputs_hidden": true} tags=[]
+```python tags=[]
 soc_params = np.linspace(0, 3, 100)
 soc_obj_vals = []
 n = 24 * 60 // 5
@@ -728,24 +647,98 @@ plt.grid(which='major', color='lightgrey')
 ```
 
 ```python
-params = np.linspace(0, 20, 50)
+params = np.arange(0, 30)
 obj_vals = []
+
+# TODO: see if this outputs a better objective without the big M limit
 
 for p_max in params:
     print(f"optimizing with p_max={p_max}")
-    m = make_cooptimisation_model(n=n, 
+    m = make_cooptimisation_model(n=288, 
                                   soc_min=0,
                                   soc_max=3,
                                   initial_soc=1.5,
                                   p_min=0,
                                   p_max=p_max,
+                                  M=14+p_max,
                                   prices_from=np.datetime64("2021-12-11"))
     m.Params.Threads = 1
-    m.Params.WorkLimit = 100
+    m.Params.WorkLimit = 200 
     m.optimize()
     obj_vals.append(m.ObjVal)
     
 clear_output()
+print("Done!")
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.title("Objective value (revenue) with different P_max")
+plt.plot(params, obj_vals)
+plt.xlabel("P_max (in MW)")
+plt.ylabel("Objective value/Revenue (in $AUD)")
+plt.grid(which='major', color='lightgrey')
+
+plt.show()
+```
+
+```python
+params = np.arange(30, 60)
+obj_vals = []
+
+# TODO: see if this outputs a better objective without the big M limit
+
+for p_max in params:
+    print(f"optimizing with p_max={p_max}")
+    m = make_cooptimisation_model(n=288, 
+                                  soc_min=0,
+                                  soc_max=3,
+                                  initial_soc=1.5,
+                                  p_min=0,
+                                  p_max=p_max,
+                                  M=14+p_max,
+                                  prices_from=np.datetime64("2021-12-11"))
+    m.Params.Threads = 1
+    m.Params.WorkLimit = 200 
+    m.optimize()
+    obj_vals.append(m.ObjVal)
+    
+clear_output()
+print("Done!")
+```
+
+```python
+plt.figure(figsize=(12,7))
+plt.title("Objective value (revenue) with different P_max")
+plt.plot(params, obj_vals)
+plt.xlabel("P_max (in MW)")
+plt.ylabel("Objective value/Revenue (in $AUD)")
+plt.grid(which='major', color='lightgrey')
+
+plt.show()
+```
+
+```python
+params = np.arange(60, 100)
+obj_vals = []
+
+# TODO: see if this outputs a better objective without the big M limit
+
+for p_max in params:
+    print(f"optimizing with p_max={p_max}")
+    m = make_cooptimisation_model(n=288, 
+                                  soc_min=0,
+                                  soc_max=3,
+                                  initial_soc=1.5,
+                                  p_min=0,
+                                  p_max=p_max,
+                                  M=14+p_max,
+                                  prices_from=np.datetime64("2021-12-11"))
+    m.Params.Threads = 1
+    m.Params.WorkLimit = 200 
+    m.optimize()
+    obj_vals.append(m.ObjVal)
+    
 print("Done!")
 ```
 
