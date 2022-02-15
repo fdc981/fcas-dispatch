@@ -110,12 +110,14 @@ expected_model = make_cooptimisation_model(
     initial_soc=1.5,
     p_min=0,
     p_max=0.5,
-    l_lower_f=sample_df["LOWER6SECRRP"].values * sample_df["LOWER6SECPROB"].values,
-    l_raise_f=sample_df["RAISE6SECRRP"].values * sample_df["RAISE6SECPROB"].values,
-    l_lower_s=sample_df["LOWER60SECRRP"].values * sample_df["LOWER60SECPROB"].values,
-    l_raise_s=sample_df["RAISE60SECRRP"].values * sample_df["RAISE60SECPROB"].values,
-    l_lower_d=sample_df["LOWER5MINRRP"].values * sample_df["LOWER5MINPROB"].values,
-    l_raise_d=sample_df["RAISE5MINRRP"].values * sample_df["RAISE5MINPROB"].values
+    prices={
+        "lower_6_sec": sample_df["LOWER6SECRRP"].values * sample_df["LOWER6SECPROB"].values,
+        "raise_6_sec": sample_df["RAISE6SECRRP"].values * sample_df["RAISE6SECPROB"].values,
+        "lower_60_sec": sample_df["LOWER60SECRRP"].values * sample_df["LOWER60SECPROB"].values,
+        "raise_60_sec": sample_df["RAISE60SECRRP"].values * sample_df["RAISE60SECPROB"].values,
+        "lower_5_min": sample_df["LOWER5MINRRP"].values * sample_df["LOWER5MINPROB"].values,
+        "raise_5_min": sample_df["RAISE5MINRRP"].values * sample_df["RAISE5MINPROB"].values
+    }
 )
 ```
 
@@ -129,12 +131,14 @@ deterministic_model = make_cooptimisation_model(
     initial_soc=1.5,
     p_min=0,
     p_max=0.5,
-    l_lower_f=sample_df["LOWER6SECRRP"].values,
-    l_raise_f=sample_df["RAISE6SECRRP"].values,
-    l_lower_s=sample_df["LOWER60SECRRP"].values,
-    l_raise_s=sample_df["RAISE60SECRRP"].values,
-    l_lower_d=sample_df["LOWER5MINRRP"].values,
-    l_raise_d=sample_df["RAISE5MINRRP"].values
+    prices={
+        "lower_6_sec": sample_df["LOWER6SECRRP"].values,
+        "raise_6_sec": sample_df["RAISE6SECRRP"].values,
+        "lower_60_sec": sample_df["LOWER60SECRRP"].values,
+        "raise_60_sec": sample_df["RAISE60SECRRP"].values,
+        "lower_5_min": sample_df["LOWER5MINRRP"].values,
+        "raise_5_min": sample_df["RAISE5MINRRP"].values
+    }
 )
 ```
 
@@ -181,12 +185,14 @@ for i in range(num_scenarios):
         initial_soc=1.5,
         p_min=0,
         p_max=0.5,
-        l_lower_f=sample_df["LOWER6SECRRP"].values * scenario_df["LOWER6SECENABLED"].values,
-        l_raise_f=sample_df["RAISE6SECRRP"].values * scenario_df["RAISE6SECENABLED"].values,
-        l_lower_s=sample_df["LOWER60SECRRP"].values * scenario_df["LOWER60SECENABLED"].values,
-        l_raise_s=sample_df["RAISE60SECRRP"].values * scenario_df["RAISE60SECENABLED"].values,
-        l_lower_d=sample_df["LOWER5MINRRP"].values * scenario_df["LOWER5MINENABLED"].values,
-        l_raise_d=sample_df["RAISE5MINRRP"].values * scenario_df["RAISE5MINENABLED"].values
+        prices={
+            "lower_6_sec": sample_df["LOWER6SECRRP"].values * scenario_df["LOWER6SECENABLED"].values,
+            "raise_6_sec": sample_df["RAISE6SECRRP"].values * scenario_df["RAISE6SECENABLED"].values,
+            "lower_60_sec": sample_df["LOWER60SECRRP"].values * scenario_df["LOWER60SECENABLED"].values,
+            "raise_60_sec": sample_df["RAISE60SECRRP"].values * scenario_df["RAISE60SECENABLED"].values,
+            "lower_5_min": sample_df["LOWER5MINRRP"].values * scenario_df["LOWER5MINENABLED"].values,
+            "raise_5_min": sample_df["RAISE5MINRRP"].values * scenario_df["RAISE5MINENABLED"].values
+        }
     )
     
     scenario_model.Params.Threads = 1
@@ -209,4 +215,8 @@ plt.axvline(x=expected_model.ObjVal, c='red', label="Expected value model object
 plt.axvline(x=np.mean(objective_values), c='orange', label="Mean of scenario models")
 plt.title("Histogram of objective values of scenario models")
 plt.legend()
+```
+
+```python
+k = scipy.stats.gaussian_kde(objective_values)
 ```
