@@ -144,6 +144,8 @@ def extract_sa_fcas_data(data_path='data/'):
 
     sa_price_df["SETTLEMENTDATE"] = pd.to_datetime(sa_price_df["SETTLEMENTDATE"])
 
+    sa_price_df = sa_price_df[~sa_price_df.duplicated("SETTLEMENTDATE", keep='last')]
+
     assert sa_price_df["SETTLEMENTDATE"].is_monotonic_increasing
 
     return sa_price_df
