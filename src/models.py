@@ -113,7 +113,6 @@ def make_alt_powerwall_model(n=12, M1=14, M2=14, epsilon=10**(-6), initial_soc=6
 
     m.addConstrs((b_raise[t] + b_lower[t] <= 1 for t in T))
 
-
     return m
 
 
