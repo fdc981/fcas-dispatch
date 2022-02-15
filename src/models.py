@@ -152,11 +152,6 @@ def make_cooptimisation_model(
         prices_from: if `prices == 'auto'`, then this is the start date to
             retrieve prices from `data/sa_fcas_data.csv`. If None, retrieves
             the first `n` prices from the price CSV.
-
-    Notes:
-        [1] For each of the `l_raise_*` and `l_lower_*` parameters, if it is
-        `None`, then this function grabs appropriate price data from the
-        `data/` directory of this project.
     """
 
     assert M > 0
