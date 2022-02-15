@@ -4,6 +4,7 @@ import gurobipy as gp
 import numpy as np
 import src.data as data
 from decimal import Decimal
+from itertools import product
 
 
 def make_powerwall_model(n=12, M1=14, M2=14, epsilon=10**(-6), initial_soc=6):
@@ -121,12 +122,7 @@ def make_cooptimisation_model(
         M=14,
         epsilon=10**(-6),
         initial_soc=6,
-        l_raise_s=None,
-        l_lower_s=None,
-        l_raise_d=None,
-        l_lower_d=None,
-        l_raise_f=None,
-        l_lower_f=None,
+        prices='auto',
         efficiency_in=0.92,
         efficiency_out=0.90,
         p_min=0,
@@ -143,21 +139,19 @@ def make_cooptimisation_model(
         M: value of big M for binary indicator constraints
         epsilon: an arbitrarily small value
         initial_soc: initial state of charge (in MWh)
-        l_raise_s: array-like containing prices for slow raise FCAS (in $AUD per MWh) [1]
-        l_lower_s: array-like containing prices for slow lower FCAS (in $AUD per MWh) [1]
-        l_raise_d: array-like containing prices for delayed raise FCAS (in $AUD per MWh) [1]
-        l_lower_d: array-like containing prices for delayed loewr FCAS (in $AUD per MWh) [1]
-        l_raise_f: array-like containing prices for fast raise FCAS (in $AUD per MWh) [1]
-        l_lower_f: array-like containing prices for fast loewr FCAS (in $AUD per MWh) [1]
+        prices: a dictionary with an array of prices associated with each of
+            the contingency FCAS services. The keys for each service should be
+            as follows: `"lower_6_sec", "raise_6_sec", "lower_60_sec",
+            "raise_60_sec", "lower_5_min", "raise_5_min"`.
         efficiency_in: the charging efficiency, as a proportion
         efficiency_out: the discharging efficiency, as a proportion
         p_min: minimum charge/discharge power limit (in MW)
         p_max: maximum charge/discharge power limit (in MW)
         soc_min: the minimum amount of stored energy (in MWh)
         soc_max: the maximum amount of stored energy (in MWh)
-        prices_from: the start date to retrieve prices from
-            `data/sa_fcas_data.csv`. If None, retrieves the first `n` prices
-            from the price CSV.
+        prices_from: if `prices == 'auto'`, then this is the start date to
+            retrieve prices from `data/sa_fcas_data.csv`. If None, retrieves
+            the first `n` prices from the price CSV.
 
     Notes:
         [1] For each of the `l_raise_*` and `l_lower_*` parameters, if it is
@@ -174,75 +168,46 @@ def make_cooptimisation_model(
 
     T = [i for i in range(n)]
 
-    # column vectors
-    p_raise_s = m.addVars(T, vtype='C', name="p_raise_s", lb=p_min, ub=p_max)
-    p_lower_s = m.addVars(T, vtype='C', name="p_lower_s", lb=p_min, ub=p_max)
-    p_raise_d = m.addVars(T, vtype='C', name="p_raise_d", lb=p_min, ub=p_max)
-    p_lower_d = m.addVars(T, vtype='C', name="p_lower_d", lb=p_min, ub=p_max)
-    p_raise_f = m.addVars(T, vtype='C', name="p_raise_f", lb=p_min, ub=p_max)
-    p_lower_f = m.addVars(T, vtype='C', name="p_lower_f", lb=p_min, ub=p_max)
+    F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
+    F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
+    F = F_lower + F_raise
 
-    # column vectors
-    b_raise_s = m.addVars(T, vtype='B', name="b_raise_s")
-    b_lower_s = m.addVars(T, vtype='B', name="b_lower_s")
-    b_raise_d = m.addVars(T, vtype='B', name="b_raise_d")
-    b_lower_d = m.addVars(T, vtype='B', name="b_lower_d")
-    b_raise_f = m.addVars(T, vtype='B', name="b_raise_f")
-    b_lower_f = m.addVars(T, vtype='B', name="b_lower_f")
+    delta_t = {
+        "lower_6_sec": 5 / 60,
+        "lower_60_sec": 1 / 60,
+        "lower_5_min": 5 / 60,
+        "raise_6_sec": 6 / 60 / 60,
+        "raise_60_sec": 1 / 60,
+        "raise_5_min": 5 / 60,
+    }
 
-    # in $AUD, lists
-    if l_raise_s is None:
-        l_raise_s = data.get_sa_fcas_data(T, "RAISE60SECRRP", start_datetime=prices_from)
-    if l_lower_s is None:
-        l_lower_s = data.get_sa_fcas_data(T, "LOWER60SECRRP", start_datetime=prices_from)
-    if l_raise_d is None:
-        l_raise_d = data.get_sa_fcas_data(T, "RAISE5MINRRP", start_datetime=prices_from)
-    if l_lower_d is None:
-        l_lower_d = data.get_sa_fcas_data(T, "LOWER5MINRRP", start_datetime=prices_from)
-    if l_raise_f is None:
-        l_raise_f = data.get_sa_fcas_data(T, "RAISE6SECRRP", start_datetime=prices_from)
-    if l_lower_f is None:
-        l_lower_f = data.get_sa_fcas_data(T, "LOWER6SECRRP", start_datetime=prices_from)
+    p = m.addVars(F, T, vtype="C", name="p", lb=p_min, ub=p_max)
+    b = m.addVars(F, T, vtype="B", name="b")
+
+    if prices == 'auto':
+        prices = {}
+        prices["raise_6_sec"] = data.get_sa_fcas_data(T, "RAISE6SECRRP", start_datetime=prices_from)
+        prices["lower_6_sec"] = data.get_sa_fcas_data(T, "LOWER6SECRRP", start_datetime=prices_from)
+        prices["raise_60_sec"] = data.get_sa_fcas_data(T, "RAISE60SECRRP", start_datetime=prices_from)
+        prices["lower_60_sec"] = data.get_sa_fcas_data(T, "LOWER60SECRRP", start_datetime=prices_from)
+        prices["raise_5_min"] = data.get_sa_fcas_data(T, "RAISE5MINRRP", start_datetime=prices_from)
+        prices["lower_5_min"] = data.get_sa_fcas_data(T, "LOWER5MINRRP", start_datetime=prices_from)
 
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
-    # in hours
-    delayed_delta = 5 / 60
-    slow_delta = 1 / 60
-    fast_delta = 1 / 10 / 60
+    m.setObjective(sum((prices[f][t] * p[f, t] for f, t in product(F, T))) / 12, gp.GRB.MAXIMIZE)
 
-    m.setObjective(sum(((l_raise_s[t] * p_raise_s[t] + l_lower_s[t] * p_lower_s[t]
-                         + l_raise_d[t] * p_raise_d[t] + l_lower_d[t] * p_lower_d[t]
-                         + l_raise_f[t] * p_raise_f[t] + l_lower_f[t] * p_lower_f[t]) * delayed_delta for t in T)), gp.GRB.MAXIMIZE)
+    m.addConstr(soc[0] == initial_soc + sum((p[f, 0] * delta_t[f] for f in F_lower))
+                                      - sum((p[f, 0] * delta_t[f] for f in F_raise)))
 
-    m.addConstr(soc[0] == initial_soc + p_lower_s[0] * slow_delta - p_raise_s[0] * slow_delta
-                                      + p_lower_d[0] * delayed_delta - p_raise_d[0] * delayed_delta
-                                      + p_lower_f[0] * fast_delta - p_raise_f[0] * fast_delta)
+    m.addConstrs((soc[t] == soc[t-1] + sum((p[f, t] * delta_t[f] for f in F_lower))
+                                     - sum((p[f, t] * delta_t[f] for f in F_raise))
+                                     for t in T[1:]))
 
-    for t in [i for i in T if i != 0]:
-        m.addConstr(soc[t] == soc[t - 1] + p_lower_s[t] * slow_delta - p_raise_s[t] * slow_delta
-                                         + p_lower_d[t] * delayed_delta - p_raise_d[t] * delayed_delta
-                                         + p_lower_f[t] * delayed_delta - p_raise_f[t] * fast_delta)
+    m.addConstrs((-p[f, t] - M * (1 - b[f, t]) <= -epsilon for f, t in product(F, T)))
+    m.addConstrs((p[f, t] - M * b[f, t] <= 0 for f, t in product(F, T)))
 
-    m.addConstrs((-p_raise_s[t] - M * (1 - b_raise_s[t]) <= -epsilon for t in T))
-    m.addConstrs((p_raise_s[t] - M * b_raise_s[t] <= 0 for t in T))
-
-    m.addConstrs((-p_raise_d[t] - M * (1 - b_raise_d[t]) <= -epsilon for t in T))
-    m.addConstrs((p_raise_d[t] - M * b_raise_d[t] <= 0 for t in T))
-
-    m.addConstrs((-p_raise_f[t] - M * (1 - b_raise_f[t]) <= -epsilon for t in T))
-    m.addConstrs((p_raise_f[t] - M * b_raise_f[t] <= 0 for t in T))
-
-    m.addConstrs((-p_lower_s[t] - M * (1 - b_lower_s[t]) <= -epsilon for t in T))
-    m.addConstrs((p_lower_s[t] - M * b_lower_s[t] <= 0 for t in T))
-
-    m.addConstrs((-p_lower_d[t] - M * (1 - b_lower_d[t]) <= -epsilon for t in T))
-    m.addConstrs((p_lower_d[t] - M * b_lower_d[t] <= 0 for t in T))
-
-    m.addConstrs((-p_lower_f[t] - M * (1 - b_lower_f[t]) <= -epsilon for t in T))
-    m.addConstrs((p_lower_f[t] - M * b_lower_f[t] <= 0 for t in T))
-
-    m.addConstrs((b_raise_s[t] + b_lower_s[t] + b_raise_d[t] + b_lower_d[t] + b_raise_f[t] + b_lower_f[t] <= 1 for t in T))
+    m.addConstrs((sum((b[f, t] for f in F)) <= 1 for t in T))
 
     return m

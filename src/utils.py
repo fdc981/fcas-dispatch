@@ -14,51 +14,28 @@ def tabulate_solution(m):
 
     Returns:
         A DataFrame tabulating values of the solution."""
-    n = len([v for v in m.getVars() if "p_raise_d" in v.VarName])
+    n = len([v for v in m.getVars() if "p[raise_6_sec" in v.VarName])
 
     T = [i for i in range(n)]
 
-    p_raise_s = [m.getVarByName(f"p_raise_s[{i}]").x for i in T]
-    p_lower_s = [m.getVarByName(f"p_lower_s[{i}]").x for i in T]
+    F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
+    F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
+    F = F_lower + F_raise
 
-    p_raise_d = [(m.getVarByName(f"p_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-    p_lower_d = [(m.getVarByName(f"p_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
+    p = {}
+    b = {}
 
-    p_raise_f = [(m.getVarByName(f"p_raise_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-    p_lower_f = [(m.getVarByName(f"p_lower_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-
-    b_raise_s = [m.getVarByName(f"b_raise_s[{i}]").x for i in T]
-    b_lower_s = [m.getVarByName(f"b_lower_s[{i}]").x for i in T]
-
-    b_raise_d = [(m.getVarByName(f"b_raise_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-    b_lower_d = [(m.getVarByName(f"b_lower_d[{i}]").x if i % 1 == 0 else 0) for i in T]
-
-    b_raise_f = [(m.getVarByName(f"b_raise_f[{i}]").x if i % 1 == 0 else 0) for i in T]
-    b_lower_f = [(m.getVarByName(f"b_lower_f[{i}]").x if i % 1 == 0 else 0) for i in T]
+    for f in F:
+        p[f] = [m.getVarByName(f"p[{f},{i}]").x for i in T]
+        b[f] = [m.getVarByName(f"b[{f},{i}]").x for i in T]
 
     soc = [m.getVarByName(f"soc[{i}]").x for i in T]
 
-    df = pd.DataFrame(columns=["p_raise_f", "b_raise_f", "p_lower_f", "b_lower_f",
-                               "p_raise_s", "b_raise_s", "p_lower_s", "b_lower_s",
-                               "p_raise_d", "b_raise_d", "p_lower_d", "b_lower_d", "soc"], index=T)
+    df = pd.DataFrame(columns=[f"{f} dispatch" for f in F] + [f"{f} enabled" for f in F] + ["soc"], index=T)
 
-    df["p_raise_s"] = p_raise_s
-    df["p_lower_s"] = p_lower_s
-
-    df["p_raise_d"] = p_raise_d
-    df["p_lower_d"] = p_lower_d
-
-    df["p_raise_f"] = p_raise_f
-    df["p_lower_f"] = p_lower_f
-
-    df["b_raise_s"] = b_raise_s
-    df["b_lower_s"] = b_lower_s
-
-    df["b_raise_d"] = b_raise_d
-    df["b_lower_d"] = b_lower_d
-
-    df["b_raise_f"] = b_raise_f
-    df["b_lower_f"] = b_lower_f
+    for f in F:
+        df[f"{f} dispatch"] = p[f]
+        df[f"{f} enabled"] = b[f]
 
     df["soc"] = soc
 
@@ -84,13 +61,15 @@ def show_solution(m, date_index=[i for i in range(1, 289)]):
 
     plt.plot(date_index, sol_df["soc"])
 
-    var_names = ["b_raise_f", "b_lower_f", "b_raise_s", "b_lower_s", "b_raise_d", "b_lower_d"]
-    var_color = {"b_raise_f": "red",
-                 "b_lower_f": "maroon",
-                 "b_raise_s": "lime",
-                 "b_lower_s": "darkgreen",
-                 "b_raise_d": "skyblue",
-                 "b_lower_d": "navy"}
+    F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
+    F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
+    F = F_lower + F_raise
+
+    var_names = [f"{f} enabled" for f in F]
+    colors = ["palegoldenrod", "lightgreen", "cyan",
+              "darkgoldenrod", "darkgreen", "darkcyan"]
+
+    var_color = dict(zip(var_names, colors))
 
     plotted = {v: False for v in var_names}
 
