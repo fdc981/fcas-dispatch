@@ -205,3 +205,124 @@ def make_cooptimisation_model(
     m.addConstrs((sum((b[f, t] for f in F)) <= 1 for t in T))
 
     return m
+
+
+def make_scenario_model(
+        n=12,
+        num_scenarios=1,
+        M=14,
+        epsilon=10**(-6),
+        initial_soc=6,
+        prices='auto',
+        enablement_probabilities=None,
+        enablement_scenarios=None,
+        efficiency_in=0.92,
+        efficiency_out=0.90,
+        p_min=0,
+        p_max=7,
+        soc_min=0.35*13.5,
+        soc_max=13.5,
+        prices_from=None
+):
+    """Creates a Gurobi model for finding the dispatch maximising expected
+    profit across scenarios.
+
+    Args:
+        n: number of trading intervals
+        num_scenarios: the number of scenarios
+        M: value of big M for binary indicator constraints
+        epsilon: an arbitrarily small value
+        initial_soc: initial state of charge (in MWh)
+        prices: a dictionary with an array of prices associated with each of
+            the contingency FCAS services. The keys for each service should be
+            as follows: `"lower_6_sec", "raise_6_sec", "lower_60_sec",
+            "raise_60_sec", "lower_5_min", "raise_5_min"`. Each array should
+            be of size `n`.
+        enablement_probabilities: a dictionary with a matrix of enablement
+            probabilities associated with each of the contingency FCAS.
+        enablement_scenarios: a dictionary with a matrix of enablement
+            scenarios associated with each of the contingency FCAS.
+            The keys for each service should be as follows: `"lower_6_sec",
+            "raise_6_sec", "lower_60_sec", "raise_60_sec", "lower_5_min",
+            "raise_5_min"`. Each array should be of size `n`.
+        efficiency_in: the charging efficiency, as a proportion
+        efficiency_out: the discharging efficiency, as a proportion
+        p_min: minimum charge/discharge power limit (in MW)
+        p_max: maximum charge/discharge power limit (in MW)
+        soc_min: the minimum amount of stored energy (in MWh)
+        soc_max: the maximum amount of stored energy (in MWh)
+        prices_from: if `prices == 'auto'`, then this is the start date to
+            retrieve prices from `data/sa_fcas_data.csv`. If None, retrieves
+            the first `n` prices from the price CSV.
+    """
+
+    assert M > 0
+    assert n > 0
+    assert epsilon > 0
+
+    m = gp.Model()
+    m.Params.LogToConsole = 0
+
+    if enablement_scenarios is None:
+        raise Exception("Please provide a valid value for enablement_scenarios.")
+    if enablement_probabilities is None:
+        raise Exception("Please provide a valid value for enablement_scenarios.")
+
+    T = [i for i in range(n)]
+    S = [i for i in range(num_scenarios)]
+
+    F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
+    F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
+    F = F_lower + F_raise
+
+    delta_t = {
+        "lower_6_sec": 6 / 60 / 60,
+        "lower_60_sec": 1 / 60,
+        "lower_5_min": 5 / 60,
+        "raise_6_sec": 6 / 60 / 60,
+        "raise_60_sec": 1 / 60,
+        "raise_5_min": 5 / 60,
+    }
+
+    p = m.addVars(F, T, vtype="C", name="p", lb=p_min, ub=p_max)
+    b = m.addVars(F, T, vtype="B", name="b")
+
+    if prices == 'auto':
+        prices = {}
+        prices["raise_6_sec"] = data.get_sa_fcas_data(T, "RAISE6SECRRP", start_datetime=prices_from)
+        prices["lower_6_sec"] = data.get_sa_fcas_data(T, "LOWER6SECRRP", start_datetime=prices_from)
+        prices["raise_60_sec"] = data.get_sa_fcas_data(T, "RAISE60SECRRP", start_datetime=prices_from)
+        prices["lower_60_sec"] = data.get_sa_fcas_data(T, "LOWER60SECRRP", start_datetime=prices_from)
+        prices["raise_5_min"] = data.get_sa_fcas_data(T, "RAISE5MINRRP", start_datetime=prices_from)
+        prices["lower_5_min"] = data.get_sa_fcas_data(T, "LOWER5MINRRP", start_datetime=prices_from)
+
+    soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
+    assert soc_min <= initial_soc and initial_soc <= soc_max
+
+    scenario_log_probability = np.zeros((num_scenarios))
+    for s in S:
+        for f in F:
+            scenario_log_probability[s] += np.log(enablement_probabilities[f] * enablement_scenarios[f][s]
+                                                  + (1 - enablement_probabilities[f]) * (1 - enablement_scenarios[f][s])).sum()
+
+    scenario_weights = [1 / sum((np.exp(scenario_log_probability[i] - scenario_log_probability[j]) for i in S)) for j in S]
+
+    print(scenario_log_probability)
+    print(scenario_weights)
+    print(sum(scenario_weights))
+
+    m.setObjective(sum((scenario_weights[s] * enablement_scenarios[f][s, t] * prices[f][t] * p[f, t] for f, t, s in product(F, T, S))) / 12, gp.GRB.MAXIMIZE)
+
+    m.addConstr(soc[0] == initial_soc + sum((p[f, 0] * delta_t[f] for f in F_lower))
+                                      - sum((p[f, 0] * delta_t[f] for f in F_raise)))
+
+    m.addConstrs((soc[t] == soc[t-1] + sum((p[f, t] * delta_t[f] for f in F_lower))
+                                     - sum((p[f, t] * delta_t[f] for f in F_raise))
+                                     for t in T[1:]))
+
+    m.addConstrs((-p[f, t] - M * (1 - b[f, t]) <= -epsilon for f, t in product(F, T)))
+    m.addConstrs((p[f, t] - M * b[f, t] <= 0 for f, t in product(F, T)))
+
+    m.addConstrs((sum((b[f, t] for f in F)) <= 1 for t in T))
+
+    return m

@@ -66,8 +66,8 @@ def show_solution(m, date_index=[i for i in range(1, 289)]):
     F = F_lower + F_raise
 
     var_names = [f"{f} enabled" for f in F]
-    colors = ["palegoldenrod", "lightgreen", "cyan",
-              "darkgoldenrod", "darkgreen", "darkcyan"]
+    colors = ["maroon", "darkgreen", "midnightblue",
+              "coral", "lightgreen", "dodgerblue"]
 
     var_color = dict(zip(var_names, colors))
 

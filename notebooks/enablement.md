@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.6
+      jupytext_version: 1.13.7
   kernelspec:
     display_name: fcas-project
     language: python
@@ -37,7 +37,7 @@ import sys
 sys.path.insert(0, "../")
 
 from src.utils import *
-from src.models import make_cooptimisation_model
+from src.models import *
 
 plt.rc("figure", figsize=(16, 8))
 plt.rc("font", size=13)
@@ -209,14 +209,100 @@ Unfortunately, the proportion of objective values that are worse than the stocha
 This can be illustrated with a histogram:
 
 ```python
+arr = [i for i in objective_values if i != -np.inf]
+```
+
+```python tags=[]
 plt.figure(figsize=(10, 7))
-plt.hist(objective_values, bins=20)
+plt.hist(arr, bins=20)
 plt.axvline(x=expected_model.ObjVal, c='red', label="Expected value model objective")
-plt.axvline(x=np.mean(objective_values), c='orange', label="Mean of scenario models")
+plt.axvline(x=np.mean(arr), c='orange', label="Mean of scenario models")
 plt.title("Histogram of objective values of scenario models")
 plt.legend()
 ```
 
+We attempt a scenario-based optimisation to overcome this. The following is a work-in-progress:
+
 ```python
-k = scipy.stats.gaussian_kde(objective_values)
+prob_df = price_df[price_df["SETTLEMENTDATE"].between(pd.Timestamp("2022-01-29"), pd.Timestamp("2022-01-30"), inclusive='left')][[s + "PROB" for s in services]]
+```
+
+```python
+rng = np.random.default_rng(seed=1)
+num_scenarios = 100
+
+enablement_scenarios = {
+    "lower_6_sec": rng.binomial(1, prob_df["LOWER6SECPROB"], size=(num_scenarios, 288)),
+    "raise_6_sec": rng.binomial(1, prob_df["RAISE6SECPROB"], size=(num_scenarios, 288)),
+    "lower_60_sec": rng.binomial(1, prob_df["LOWER60SECPROB"], size=(num_scenarios, 288)),
+    "raise_60_sec": rng.binomial(1, prob_df["RAISE60SECPROB"], size=(num_scenarios, 288)),
+    "lower_5_min": rng.binomial(1, prob_df["LOWER5MINPROB"], size=(num_scenarios, 288)),
+    "raise_5_min": rng.binomial(1, prob_df["RAISE5MINPROB"], size=(num_scenarios, 288))
+}
+
+enablement_probabilities = {
+    "lower_6_sec": prob_df["LOWER6SECPROB"].values,
+    "raise_6_sec": prob_df["RAISE6SECPROB"].values,
+    "lower_60_sec": prob_df["LOWER60SECPROB"].values,
+    "raise_60_sec": prob_df["RAISE60SECPROB"].values,
+    "lower_5_min": prob_df["LOWER5MINPROB"].values,
+    "raise_5_min": prob_df["RAISE5MINPROB"].values
+}
+
+ms = make_scenario_model(
+    n=288,
+    soc_min=0,
+    soc_max=3,
+    initial_soc=1.5,
+    p_min=0,
+    p_max=0.5,
+    prices_from=pd.Timestamp("2022-01-29"),
+    num_scenarios=num_scenarios,
+    enablement_scenarios=enablement_scenarios,
+    enablement_probabilities=enablement_probabilities
+)
+```
+
+```python
+ms.optimize()
+```
+```python
+tabulate_solution(ms)
+```
+
+```python
+ms.ObjVal
+```
+
+```python
+show_solution(ms)
+```
+
+This solution chooses the max expected price, as shown below:
+
+```python
+weights = np.array(
+    [2.6213691657961058e-21, 1.2226405496105753e-27, 2.544382418575854e-26, 2.1042802661064757e-28, 2.9713246270786774e-30, 3.263120741411554e-34, 5.474467450112092e-35, 2.507528407632176e-10, 1.5678248373004914e-08, 1.739426210666378e-22, 1.6536701613246296e-23, 2.232341557744545e-25, 5.931110028025331e-24, 3.375170194037694e-35, 1.014356335648746e-12, 0.9999999838835822, 2.868692778125398e-20, 3.43217324582967e-21, 1.3917907866017224e-26, 9.683827851997672e-41, 1.0770457476903445e-13, 6.848237974657089e-26, 1.8733300844391512e-36, 2.2060526551444808e-34, 2.229233627540206e-29, 9.698785371834155e-35, 4.880085814451911e-39, 5.653863496914764e-24, 7.552650664769611e-31, 1.7055550635778583e-15, 1.9958722683331736e-18, 7.408790351700401e-21, 2.5351663415529056e-30, 1.82120813363724e-12, 3.1086350742022237e-13, 8.156803293998408e-28, 3.7912515011506934e-33, 5.190375211672366e-25, 2.430725977257849e-28, 2.3009995263105903e-23, 1.42673570641854e-20, 3.8884285974129916e-30, 5.6481981783458356e-14, 3.602445897051469e-22, 4.3399735593171006e-13, 8.978037709884418e-32, 2.524009349033974e-33, 4.415496745409943e-19, 1.2688025407260119e-28, 2.275765505046974e-27, 1.6297809381162665e-24, 5.200482566262684e-35, 3.3711083510958284e-30, 9.961492513278606e-23, 1.0203632610666329e-39, 7.822921164447502e-26, 4.680102276604843e-20, 3.9508158784859893e-26, 1.577935748820397e-31, 3.0918134097690213e-21, 1.0989535555443783e-17, 5.991594744294355e-11, 2.3378724073955927e-21, 4.1751873383796333e-16, 3.678875642261077e-23, 1.4745583245814052e-24, 2.1481861616840143e-30, 1.5521364439436075e-18, 1.3204743168332643e-33, 1.1250318198158334e-38, 4.514186132846059e-19, 6.943555663765836e-35, 3.7418495987504166e-17, 7.548424651253122e-26, 3.7455464751461817e-31, 1.153893395385135e-31, 6.443077459020507e-27, 1.0292831674907895e-41, 1.0446409666712677e-16, 3.755618927225943e-30, 3.2354752281115518e-19, 1.2891477643643042e-26, 1.8581724844941088e-28, 4.45854880611292e-25, 2.0487188232724192e-30, 1.0840172691953114e-18, 3.713161696145085e-21, 1.554921672353685e-25, 4.198263511886603e-12, 2.038873217271102e-19, 9.799194722589153e-24, 1.6000460849054768e-11, 7.422873579465244e-17, 1.035552623255617e-10, 3.880488896864059e-37, 7.462377230259266e-29, 1.4332663301201078e-39, 4.598507632566949e-18, 8.128406556048925e-38, 7.521367433908631e-18]
+)
+```
+
+```python
+services_l = ["lower_6_sec", "raise_6_sec", "lower_60_sec", "raise_60_sec", "lower_5_min", "raise_5_min"]
+services = [s.replace("_", "").upper() for s in services_l]
+relevant_prices = price_df[price_df["SETTLEMENTDATE"].between(pd.Timestamp("2022-01-29"), pd.Timestamp("2022-01-30"), inclusive='left')][[s + "RRP" for s in services]]
+```
+
+```python
+for s, s_l in zip(services, services_l):
+    # row-wise multiplication
+    scenario_prices = relevant_prices[s + "RRP"].values * enablement_scenarios[s_l]
+    
+    plt.plot((weights.T.reshape((1, 100)) @ scenario_prices)[0], label=s_l)
+    
+plt.legend()
+plt.show()
+```
+
+```python
+
 ```
