@@ -128,7 +128,8 @@ def make_cooptimisation_model(
         p_max=7,
         soc_min=0.35*13.5,
         soc_max=13.5,
-        prices_from=None
+        prices_from=None,
+        log=True
 ):
     """Creates a Gurobi model for finding the dispatch maximising profit when
     participating in all contingency FCAS markets.
@@ -151,6 +152,7 @@ def make_cooptimisation_model(
         prices_from: if `prices == 'auto'`, then this is the start date to
             retrieve prices from `data/sa_fcas_data.csv`. If None, retrieves
             the first `n` prices from the price CSV.
+        log: allow Gurobi to output during optimization>
     """
 
     assert M > 0
@@ -158,7 +160,7 @@ def make_cooptimisation_model(
     assert epsilon > 0
 
     m = gp.Model()
-    m.Params.LogToConsole = 0
+    m.Params.LogToConsole = log
 
     T = [i for i in range(n)]
 
@@ -222,7 +224,8 @@ def make_scenario_model(
         p_max=7,
         soc_min=0.35*13.5,
         soc_max=13.5,
-        prices_from=None
+        prices_from=None,
+        log=True
 ):
     """Creates a Gurobi model for finding the dispatch maximising expected
     profit across scenarios.
@@ -254,6 +257,7 @@ def make_scenario_model(
         prices_from: if `prices == 'auto'`, then this is the start date to
             retrieve prices from `data/sa_fcas_data.csv`. If None, retrieves
             the first `n` prices from the price CSV.
+        log: allow Gurobi to output during optimization.
     """
 
     assert M > 0
@@ -261,7 +265,7 @@ def make_scenario_model(
     assert epsilon > 0
 
     m = gp.Model()
-    m.Params.LogToConsole = 0
+    m.Params.LogToConsole = log
 
     if enablement_scenarios is None:
         raise Exception("Please provide a valid value for enablement_scenarios.")
