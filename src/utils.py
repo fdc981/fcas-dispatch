@@ -1,5 +1,6 @@
-"""Various utility functions for notebook usage."""
+"""Various utility and helper functions."""
 
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pathlib
@@ -128,3 +129,47 @@ def extract_tables(report_path: str) -> pd.DataFrame:
                                nrows=(indices[i+1] - indices[i]-1)))
 
     return dfs
+
+
+def enablement_scenario_weights(
+        num_scenarios,
+        enablement_scenarios,
+        enablement_probabilities,
+        debug=True
+):
+    """Calculate the weights of each of the enablement scenarios, defined as
+    the conditional probability that a scenario occurs given that the sampled
+    set of scenarios holds.
+
+    Args:
+        num_scenarios: the number of scenarios
+        enablement_scenarios: a dictionary with a matrix of enablement
+            scenarios associated with each of the contingency FCAS.
+            The keys for each service should be as follows: `"lower_6_sec",
+            "raise_6_sec", "lower_60_sec", "raise_60_sec", "lower_5_min",
+            "raise_5_min"`. Each array should be of size `n`.
+        enablement_probabilities: a dictionary with a matrix of enablement
+            probabilities associated with each of the contingency FCAS.
+        debug: if true, output each of the log probability values,
+            scenario weights, and weight sums.
+    """
+    S = [i for i in range(num_scenarios)]
+
+    F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
+    F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
+    F = F_lower + F_raise
+
+    scenario_log_probability = np.zeros((num_scenarios))
+    for s in S:
+        for f in F:
+            scenario_log_probability[s] += np.log(enablement_probabilities[f] * enablement_scenarios[f][s]
+                                                  + (1 - enablement_probabilities[f]) * (1 - enablement_scenarios[f][s])).sum()
+
+    scenario_weights = [1 / sum((np.exp(scenario_log_probability[i] - scenario_log_probability[j]) for i in S)) for j in S]
+
+    if debug:
+        print("scenario_log_probability:", scenario_log_probability)
+        print("scenario_weights:", scenario_weights)
+        print("weight sum:", sum(scenario_weights))
+
+    return scenario_weights

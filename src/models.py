@@ -5,6 +5,7 @@ import numpy as np
 import src.data as data
 from decimal import Decimal
 from itertools import product
+from src.utils import enablement_scenario_weights
 
 
 def make_powerwall_model(n=12, M1=14, M2=14, epsilon=10**(-6), initial_soc=6):
@@ -303,17 +304,7 @@ def make_scenario_model(
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
-    scenario_log_probability = np.zeros((num_scenarios))
-    for s in S:
-        for f in F:
-            scenario_log_probability[s] += np.log(enablement_probabilities[f] * enablement_scenarios[f][s]
-                                                  + (1 - enablement_probabilities[f]) * (1 - enablement_scenarios[f][s])).sum()
-
-    scenario_weights = [1 / sum((np.exp(scenario_log_probability[i] - scenario_log_probability[j]) for i in S)) for j in S]
-
-    print(scenario_log_probability)
-    print(scenario_weights)
-    print(sum(scenario_weights))
+    scenario_weights = enablement_scenario_weights(num_scenarios, enablement_scenarios, enablement_probabilities)
 
     m.setObjective(sum((scenario_weights[s] * enablement_scenarios[f][s, t] * prices[f][t] * p[f, t] for f, t, s in product(F, T, S))) / 12, gp.GRB.MAXIMIZE)
 
