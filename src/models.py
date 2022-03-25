@@ -212,7 +212,6 @@ def make_cooptimisation_model(
 
 def make_scenario_model(
         n=12,
-        num_scenarios=1,
         M=14,
         epsilon=10**(-6),
         initial_soc=6,
@@ -234,7 +233,6 @@ def make_scenario_model(
 
     Args:
         n: number of trading intervals
-        num_scenarios: the number of scenarios
         M: value of big M for binary indicator constraints
         epsilon: an arbitrarily small value
         initial_soc: initial state of charge (in MWh)
@@ -306,14 +304,19 @@ def make_scenario_model(
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
+    num_price_scenarios = prices[F[0]].shape[0]
+    num_enablement_scenarios = enablement_scenarios[F[0]].shape[0]
+
     scenarios = {}
-    en_scenario_weights = enablement_scenario_weights(num_scenarios, enablement_scenarios, enablement_probabilities)
+    en_scenario_weights = enablement_scenario_weights(num_enablement_scenarios,
+                                                      enablement_scenarios,
+                                                      enablement_probabilities)
     scenario_weights = {f: [] for f in F}
 
     if scenario_combine_method == 'product':
         for f in F:
             scenarios[f] = []
-            for s1, s2 in product(range(num_scenarios), repeat=2):
+            for s1, s2 in product(range(num_price_scenarios), range(num_enablement_scenarios)):
                 scenarios[f].append(prices[f][s1, :] * enablement_scenarios[f][s2, :])
                 scenario_weights[f].append(en_scenario_weights[s2])
             scenarios[f] = np.array(scenarios[f])
