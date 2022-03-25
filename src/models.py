@@ -301,6 +301,13 @@ def make_scenario_model(
         prices["raise_5_min"] = data.get_sa_fcas_data(T, "RAISE5MINRRP", start_datetime=prices_from)
         prices["lower_5_min"] = data.get_sa_fcas_data(T, "LOWER5MINRRP", start_datetime=prices_from)
 
+    # if 1d array, reshape to 2d array with 1 row
+    for key in prices.keys():
+        if prices[key].ndim == 1:
+            prices[key] = prices[key].reshape((1, prices[key].shape[0]))
+        if enablement_scenarios[key].ndim == 1:
+            enablement_scenarios[key] = enablement_scenarios[key].reshape((1, enablement_scenarios[key].shape[0]))
+
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
