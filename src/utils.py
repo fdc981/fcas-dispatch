@@ -43,7 +43,7 @@ def tabulate_solution(m):
     return df
 
 
-def show_solution(m, date_index=[i for i in range(1, 289)]):
+def show_solution(m, date_index=None):
     """Plot the state of charge of a solution made from optimizing
     make_cooptimisation_model, highlighting dispatch for each of the FCAS
     markets.
@@ -55,12 +55,34 @@ def show_solution(m, date_index=[i for i in range(1, 289)]):
     Returns:
         None. Shows a plot of the solution.
     """
+    n = len([v for v in m.getVars() if "p[raise_6_sec" in v.VarName])
+
+    F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
+    F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
+    F = F_lower + F_raise
+
+    delta_t = {
+        "lower_6_sec": 6 / 60 / 60,
+        "lower_60_sec": 1 / 60,
+        "lower_5_min": 5 / 60,
+        "raise_6_sec": 6 / 60 / 60,
+        "raise_60_sec": 1 / 60,
+        "raise_5_min": 5 / 60,
+    }
+
+    if date_index is None:
+        date_index = [i for i in range(0, n+1)]
+
+    initial_response = sum([m.getVarByName(f"p[{f},0]").x * delta_t[f] for f in F])
+    after_initial_soc = m.getVarByName("soc[0]").x
+    initial_soc = after_initial_soc - initial_response
+
     plt.figure(figsize=(12, 7))
     plt.title("State of charge over time (enablements highlighted)")
 
     sol_df = tabulate_solution(m)
 
-    plt.plot(date_index, sol_df["soc"])
+    plt.plot(date_index, [initial_soc] + sol_df["soc"].values.tolist())
 
     F_lower = ["lower_6_sec", "lower_60_sec", "lower_5_min"]
     F_raise = ["raise_6_sec", "raise_60_sec", "raise_5_min"]
