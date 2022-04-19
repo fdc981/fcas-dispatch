@@ -52,12 +52,13 @@ def int_scenario_probability(index, success_probs):
     return np.prod(scenario * success_probs + (1 - scenario) * (1 - success_probs))
 
 
-def possible_next_scenarios(int_scenario, success_probs):
+def possible_next_scenarios(int_scenario, scenario_prob, success_probs):
     """Return a generator of the scenarios from `int_scenario` that
     may be the next possible scenario.
 
     Args:
         int_scenario: the scenario in integer representation
+        scenario_prob: probability of the scenario
         success_probs: the success probabilities
 
     Return:
@@ -66,8 +67,9 @@ def possible_next_scenarios(int_scenario, success_probs):
     scenario_length = len(success_probs)
     for flip_pos in range(scenario_length):
         scenario = int_scenario ^ 2**flip_pos
-        if int_scenario_probability(scenario, success_probs) <= int_scenario:
-            yield scenario
+        prob = int_scenario_probability(scenario, success_probs)
+        if prob <= int_scenario:
+            yield (prob, scenario)
 
 
 def get_top_scenarios(n, success_probs):
@@ -82,9 +84,9 @@ def get_top_scenarios(n, success_probs):
     Returns:
         a matrix with the i-th row containing the i-th top scenario.
     """
-    most_likely_scenario = scenario_to_int([0 if p < 0.5 else 1 for p in success_probs])
+    top_scenario = scenario_to_int([0 if p < 0.5 else 1 for p in success_probs])
 
-    q = [(-int_scenario_probability(most_likely_scenario, success_probs), most_likely_scenario)]
+    q = [(-int_scenario_probability(top_scenario, success_probs), top_scenario)]
 
     top_scenarios = []
     encountered = set([e[1] for e in q])
@@ -94,13 +96,13 @@ def get_top_scenarios(n, success_probs):
 
     while i < iter_limit and len(q) > 0:
         i += 1
-        most_likely_scenario = heapq.heappop(q)
-        top_scenarios.append(most_likely_scenario)
-        for s in possible_next_scenarios(most_likely_scenario[1], success_probs):
-            elem = (-int_scenario_probability(s, success_probs), s)
-            if s not in encountered:
+        top_prob, top_scenario = heapq.heappop(q)
+        top_scenarios.append(top_scenario)
+        for prob, scenario in possible_next_scenarios(top_scenario, top_prob, success_probs):
+            elem = (-prob, scenario)
+            if scenario not in encountered:
                 heapq.heappush(q, elem)
-                encountered.add(s)
+                encountered.add(scenario)
 
     scenario_length = len(success_probs)
-    return np.array([int_to_scenario(s, scenario_length) for _, s in top_scenarios])
+    return np.array([int_to_scenario(s, scenario_length) for s in top_scenarios])
