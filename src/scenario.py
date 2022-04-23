@@ -52,7 +52,37 @@ def int_scenario_probability(index, success_probs):
     return np.prod(scenario * success_probs + (1 - scenario) * (1 - success_probs))
 
 
-def possible_next_scenarios(int_scenario, scenario_prob, success_probs):
+def flip_scenario(int_scenario, prob, index, success_prob):
+    """Flip the `index` bit of scenario `bitstr`, returning a pair
+    containing the new scenario and its associated probability.
+
+    Args:
+        bitstr: the scenario as a boolean array
+        prob: probability of the scenario occurring
+        index: the index of the bit to be flipped
+        success_prob: the probability of success
+
+    Returns:
+        a pair `(prob, scenario)` with `scenario` being the new
+        scenario in bitstring form and `prob` being the associated probability.
+    """
+    bit = (int_scenario & 2**index) == 2**index
+
+    prob /= (bit * success_prob + (1 - bit) * (1 - success_prob))
+
+    bit = not bit
+
+    prob *= (bit * success_prob + (1 - bit) * (1 - success_prob))
+
+    if bit == 0:
+        new_scenario = int_scenario - (2**index)
+    else:
+        new_scenario = int_scenario + (2**index)
+
+    return (prob, new_scenario)
+
+
+def possible_next_scenarios(bitstr, scenario_prob, success_probs):
     """Return a generator of the scenarios from `int_scenario` that
     may be the next possible scenario.
 
@@ -66,10 +96,8 @@ def possible_next_scenarios(int_scenario, scenario_prob, success_probs):
     """
     scenario_length = len(success_probs)
     for flip_pos in range(scenario_length):
-        scenario = int_scenario ^ 2**flip_pos
-        prob = int_scenario_probability(scenario, success_probs)
-        if prob <= int_scenario:
-            yield (prob, scenario)
+        new_prob, new_scenario = flip_scenario(bitstr, scenario_prob, flip_pos, success_probs[flip_pos])
+        yield (new_prob, new_scenario)
 
 
 def get_top_scenarios(n, success_probs):
