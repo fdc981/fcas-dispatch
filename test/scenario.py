@@ -23,7 +23,8 @@ class TestTopScenarioGeneration(unittest.TestCase):
         self.top_scenarios = get_top_scenarios(self.num_scenarios, self.prob_vec)
 
     def test_is_monotonic_decreasing(self):
-        scenario_probs = np.prod(self.top_scenarios * self.prob_vec, axis=1)
+        outcome_probs = self.top_scenarios * self.prob_vec + (1 - self.top_scenarios) * (1 - self.prob_vec)
+        scenario_probs = np.prod(outcome_probs, axis=1, dtype=np.float128)
 
         self.assertTrue(np.all(np.diff(scenario_probs) <= 0))
 
