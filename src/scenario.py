@@ -1,5 +1,6 @@
 import numpy as np
 import heapq
+import math
 
 
 def int_to_scenario(n, scenario_length):
@@ -68,18 +69,19 @@ def flip_scenario(int_scenario, scenario_prob, index, success_prob, scenario_len
         natural log of the probability.
     """
     flip_pos = scenario_length - index - 1
-    bit = (int_scenario & 2**flip_pos) == 2**flip_pos
+    mask = 2**flip_pos
+    bit = (int_scenario & mask) == mask
 
-    scenario_prob -= np.log(bit * success_prob + (1 - bit) * (1 - success_prob))
+    scenario_prob -= math.log(bit * success_prob + (1 - bit) * (1 - success_prob))
 
     bit = not bit
 
-    scenario_prob += np.log(bit * success_prob + (1 - bit) * (1 - success_prob))
+    scenario_prob += math.log(bit * success_prob + (1 - bit) * (1 - success_prob))
 
     if bit == 0:
-        new_scenario = int_scenario - (2**flip_pos)
+        new_scenario = int_scenario - mask
     else:
-        new_scenario = int_scenario + (2**flip_pos)
+        new_scenario = int_scenario + mask
 
     return (scenario_prob, new_scenario)
 
