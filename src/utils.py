@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pathlib
 import shutil
+from src.constants import services
 
 
 def tabulate_solution(m):
@@ -195,3 +196,55 @@ def enablement_scenario_weights(
         print("weight sum:", sum(scenario_weights))
 
     return scenario_weights
+
+
+def load_fcas_prices():
+    """Loads and returns the Pandas dataframe of the SA FCAS prices table.
+    Returned dataframe contains additional columns containing enablement
+    probabilities, with names ending in "PROB", and a "PERIODID" column,
+    indicating time of trading interval in the day.
+    """
+    price_df = pd.read_csv("../data/sa_fcas_data.csv", parse_dates=["SETTLEMENTDATE"])
+    price_df["PERIODID"] = price_df["SETTLEMENTDATE"].apply(
+        lambda x: str(x.hour).zfill(2) + str(x.minute).zfill(2)
+    )
+
+    for s in services:
+        price_df[s + "PROB"] = (price_df[s + "LOCALDISPATCH"] / price_df[s + "ACTUALAVAILABILITY"]).clip(upper=1)
+
+    return price_df
+
+
+def load_fcas_price_forecast():
+    """Loads and returns the Pandas dataframe of the forecast for SA FCAS
+    prices.
+    """
+    scenario_dfs = {
+        s: pd.read_csv(f"../data/{s}RRP_modified_training.csv", parse_dates=["SETTLEMENTDATE"]) for s in services
+    }
+
+    return scenario_dfs
+
+
+def is_quantile_crossing(quantiles):
+    return np.any(np.diff(quantiles) < 0)
+
+
+def inverse_cdf(y, quantile_cutoffs, quantile_forecasts):
+    assert y >= 0 and y <= 1
+
+    qi = None
+    for i in range(len(quantile_cutoffs)-1):
+        if y >= quantile_cutoffs[i] and y <= quantile_cutoffs[i+1]:
+            qi = i
+            break
+
+    if qi is None:
+        raise Exception(f"value {y} is not a quantile")
+
+    rise = quantile_cutoffs[qi+1] - quantile_cutoffs[qi]
+    run = quantile_forecasts[qi+1] - quantile_forecasts[qi]
+
+    slope = rise/run
+
+    return (y - quantile_cutoffs[qi]) / slope + quantile_forecasts[qi]
