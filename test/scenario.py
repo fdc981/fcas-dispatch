@@ -26,7 +26,10 @@ class TestTopScenarioGeneration(unittest.TestCase):
         outcome_probs = self.top_scenarios * self.prob_vec + (1 - self.top_scenarios) * (1 - self.prob_vec)
         scenario_probs = np.prod(outcome_probs, axis=1, dtype=np.float128)
 
-        self.assertTrue(np.all(np.diff(scenario_probs) <= 0))
+        diffs = np.diff(scenario_probs)
+
+        self.assertTrue(np.all(diffs <= 0),
+                        f"Result is not monotonic decreasing. Number of increasing occurrences {(diffs[diffs <= 0]).size}.")
 
     def test_is_correct_shape(self):
         self.assertTrue(self.top_scenarios.shape == (self.num_scenarios, self.scenario_length))
