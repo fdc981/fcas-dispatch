@@ -74,7 +74,8 @@ def show_solution(m, date_index=None):
     if date_index is None:
         date_index = [i for i in range(0, n+1)]
 
-    initial_response = sum([m.getVarByName(f"p[{f},0]").x * delta_t[f] for f in F])
+    initial_response = sum([m.getVarByName(f"p[{f},0]").x * delta_t[f] for f in F_lower]) \
+        - sum([m.getVarByName(f"p[{f},0]").x * delta_t[f] for f in F_raise])
     after_initial_soc = m.getVarByName("soc[0]").x
     initial_soc = after_initial_soc - initial_response
 
