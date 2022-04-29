@@ -281,3 +281,53 @@ def inverse_cdf_parallel(y, quantile_cutoffs, quantile_values):
     slope = rise/run
 
     return (y.T - quantile_cutoffs[0, qi]) / slope + quantile_values[0, qi]
+
+
+def inverse_cdf_matrix(y, quantile_cutoffs, quantile_values):
+    """Return the inverse cdf of the values in `y` with the cdf being a linear
+    approximation of the one provided by the quantiles.
+
+    Args:
+        y:
+            a matrix of values. Each row corresponds to one scenario. The
+            matrix should be of shape `(num_scenarios, scenario_length)`.
+        quantile_cutoffs:
+            matrix of quantile cutoffs. For example, if the k-quantile is x
+            then the quantile cutoff is k. Each row should contain the quantile
+            cutoffs for the interval forecast of one trading interval. The
+            matrix should be of shape `(scenario_length, num_quantiles)`.
+        quantile_values:
+            matrix of corresponding quantile forecasts. For example, is the
+            k-quantile is x then the quantile value is x. The matrix should be
+            of shape `(scenario_length, num_quantiles)`.
+
+    Returns:
+        matrix containing the inverse cdf of each corresponding value in `y`.
+    """
+    assert np.all(np.logical_and(y >= 0, y <= 1))
+
+    # check dimensions
+    assert y.ndim == quantile_cutoffs.ndim == quantile_values.ndim == 2
+    assert quantile_values.shape == quantile_cutoffs.shape
+    assert y.shape[1] == quantile_cutoffs.shape[0]
+
+    qi = -np.ones(y.shape, dtype=int)
+
+    for r in range(y.shape[0]):
+        for c in range(y.shape[1]):
+            for q in range(quantile_cutoffs.shape[1]-1):
+                if (y[r, c] >= quantile_cutoffs[c, q] and y[r, c] <= quantile_cutoffs[c, q+1]):
+                    qi[r, c] = q
+                    break
+
+    if np.any(qi == -1):
+        raise Exception(f"The following y-values did not fall in any quantile: {y[qi == -1]}")
+
+    row_index = np.arange(quantile_cutoffs.shape[0]).reshape((quantile_cutoffs.shape[0], 1))
+
+    rise = quantile_cutoffs[row_index, qi.T + 1] - quantile_cutoffs[row_index, qi.T]
+    run = quantile_values[row_index, qi.T + 1] - quantile_values[row_index, qi.T]
+
+    slope = rise/run
+
+    return (y - quantile_cutoffs[row_index, qi.T].T) / slope.T + quantile_values[row_index, qi.T].T
