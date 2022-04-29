@@ -337,10 +337,13 @@ def make_scenario_model(
 
     S = [i for i in range(len(scenarios[F[0]]))]
 
-
     print("scenarios shapes:", [scenarios[f].shape for f in F])
 
-    m.setObjective(sum((scenario_weights[f][s] * scenarios[f][s, t] * p[f, t] for f, t, s in product(F, T, S))) / 12, gp.GRB.MAXIMIZE)
+    scenario_consts = {(f, t): np.dot(scenario_weights[f], scenarios[f][:, t]) for f, t in product(F, T)}
+
+    print("scenario consts calculated")
+
+    m.setObjective(sum((scenario_consts[f, t] * p[f, t] for f, t in product(F, T))) / 12, gp.GRB.MAXIMIZE)
 
     m.addConstr(soc[0] == initial_soc + sum((p[f, 0] * delta_t[f] for f in F_lower))
                                       - sum((p[f, 0] * delta_t[f] for f in F_raise)))
