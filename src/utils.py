@@ -249,3 +249,35 @@ def inverse_cdf(y, quantile_cutoffs, quantile_forecasts):
     slope = rise/run
 
     return (y - quantile_cutoffs[qi]) / slope + quantile_forecasts[qi]
+
+
+def inverse_cdf_parallel(y, quantile_cutoffs, quantile_values):
+    """Return the inverse cdf of the values in `y` with the cdf being a linear
+    approximation of the one provided by the quantiles.
+
+    Args:
+        y: a column vector of values.
+        quantile_cutoffs: row vector of quantile cutoffs. For example, if the
+            k-quantile is x then the quantile cutoff is k.
+        quantile_values: row vector of corresponding quantile forecasts. For
+            example, is the k-quantile is x then the quantile value is x.
+
+    Returns:
+        the inverse cdf of each value in y.
+    """
+    assert np.all(np.logical_and(y >= 0, y <= 1))
+    assert y.ndim == quantile_cutoffs.ndim == quantile_values.ndim == 2
+
+    y_location = np.logical_and(y >= quantile_cutoffs[:, :-1],
+                                y < quantile_cutoffs[:, 1:])
+
+    loc_found, qi = np.nonzero(y_location)
+
+    assert np.all(loc_found == np.arange(y.size))
+
+    rise = quantile_cutoffs[0, qi + 1] - quantile_cutoffs[0, qi]
+    run = quantile_values[0, qi + 1] - quantile_values[0, qi]
+
+    slope = rise/run
+
+    return (y.T - quantile_cutoffs[0, qi]) / slope + quantile_values[0, qi]
