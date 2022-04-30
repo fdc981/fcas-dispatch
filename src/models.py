@@ -5,7 +5,7 @@ import numpy as np
 import src.data as data
 from decimal import Decimal
 from itertools import product
-from src.utils import enablement_scenario_weights
+from src.utils import enablement_scenario_weights, calc_scenario_consts
 
 
 def make_powerwall_model(n=12, M1=14, M2=14, epsilon=10**(-6), initial_soc=6):
@@ -315,37 +315,11 @@ def make_scenario_model(
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
-    num_price_scenarios = prices[F[0]].shape[0]
-    num_enablement_scenarios = enablement_scenarios[F[0]].shape[0]
-
-    scenarios = {}
-    en_scenario_weights = enablement_scenario_weights(num_enablement_scenarios,
-                                                      enablement_scenarios,
-                                                      enablement_probabilities)
-    scenario_weights = {f: [] for f in F}
-
-    if scenario_combine_method == 'product':
-        for f in F:
-            scenarios[f] = []
-            for s1, s2 in product(range(num_price_scenarios), range(num_enablement_scenarios)):
-                scenarios[f].append(prices[f][s1, :] * enablement_scenarios[f][s2, :])
-                scenario_weights[f].append(en_scenario_weights[s2])
-            scenarios[f] = np.array(scenarios[f])
-    elif scenario_combine_method == 'zip':
-        assert all((prices[f].shape == enablement_scenarios[f].shape for f in F))
-        for f in F:
-            scenarios[f] = prices[f] * enablement_scenarios[f]
-            scenario_weights[f].append(scenario_weights)
-    else:
-        raise Exception("Note: scenarios not done")
-
-    S = [i for i in range(len(scenarios[F[0]]))]
-
-    print("scenarios shapes:", [scenarios[f].shape for f in F])
-
-    scenario_consts = {(f, t): np.dot(scenario_weights[f], scenarios[f][:, t]) for f, t in product(F, T)}
-
-    print("scenario consts calculated")
+    scenario_consts = calc_scenario_consts(prices,
+                                           enablement_scenarios,
+                                           enablement_probabilities,
+                                           T,
+                                           scenario_combine_method)
 
     m.setObjective(sum((scenario_consts[f, t] * p[f, t] for f, t in product(F, T))) / 12, gp.GRB.MAXIMIZE)
 
