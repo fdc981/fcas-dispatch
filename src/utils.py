@@ -156,7 +156,7 @@ def extract_tables(report_path: str) -> pd.DataFrame:
     return dfs
 
 
-def enablement_scenario_weights(
+def calc_enablement_probs(
         num_scenarios,
         enablement_scenarios,
         enablement_probabilities,
@@ -369,9 +369,9 @@ def calc_scenario_consts(
     num_enablement_scenarios = enablement_scenarios[F[0]].shape[0]
 
     scenarios = {}
-    en_scenario_weights = enablement_scenario_weights(num_enablement_scenarios,
-                                                      enablement_scenarios,
-                                                      enablement_probabilities)
+    en_scenario_weights = calc_enablement_probs(num_enablement_scenarios,
+                                                enablement_scenarios,
+                                                enablement_probabilities)
     scenario_weights = {f: [] for f in F}
 
     if scenario_combine_method == 'product':
