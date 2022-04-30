@@ -260,6 +260,10 @@ def make_scenario_model(
         prices_from: if `prices == 'auto'`, then this is the start date to
             retrieve arrays of prices from `data/sa_fcas_data.csv`.
         log: allow Gurobi to output during optimization.
+
+    Returns:
+        Gurobi model of the stochastic optimisation problem initialised using
+        the given parameters.
     """
 
     assert M > 0
