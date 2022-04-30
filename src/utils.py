@@ -185,10 +185,9 @@ def enablement_scenario_weights(
     F = F_lower + F_raise
 
     scenario_log_probability = np.zeros((num_scenarios))
-    for s in S:
-        for f in F:
-            scenario_log_probability[s] += np.log(enablement_probabilities[f] * enablement_scenarios[f][s]
-                                                  + (1 - enablement_probabilities[f]) * (1 - enablement_scenarios[f][s])).sum()
+    for f in F:
+        scenario_log_probability += np.sum(np.log(enablement_probabilities[f] * enablement_scenarios[f]
+                                                  + (1 - enablement_probabilities[f]) * (1 - enablement_scenarios[f])))
 
     scenario_weights = [1 / sum((np.exp(scenario_log_probability[i] - scenario_log_probability[j]) for i in S)) for j in S]
 
