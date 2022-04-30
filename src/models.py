@@ -5,7 +5,7 @@ import numpy as np
 import src.data as data
 from decimal import Decimal
 from itertools import product
-from src.utils import enablement_scenario_weights, calc_scenario_consts
+from src.utils import calc_scenario_consts
 
 
 def make_powerwall_model(n=12, M1=14, M2=14, epsilon=10**(-6), initial_soc=6):
