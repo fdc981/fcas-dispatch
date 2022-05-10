@@ -373,21 +373,21 @@ def calc_scenario_consts(
     num_enablement_scenarios = enablement_scenarios[F[0]].shape[0]
 
     scenarios = {}
-    en_scenario_weights = calc_enablement_probs(num_enablement_scenarios,
-                                                enablement_scenarios,
-                                                enablement_probabilities)
-    scenario_weights = {f: [] for f in F}
 
     if scenario_combine_method == 'product':
         scenario_consts = {}
         for f in F:
             for t in T:
-                enablement_sum = np.dot(en_scenario_weights, enablement_scenarios[f][:, t])
+                enablement_sum = enablement_probabilities[f][t]
                 price_sum = np.sum(price_scenarios[f][:, t]) / num_price_scenarios
 
                 scenario_consts[f, t] = enablement_sum * price_sum
     elif scenario_combine_method == 'zip':
         assert all((price_scenarios[f].shape == enablement_scenarios[f].shape for f in F))
+        en_scenario_weights = calc_enablement_probs(num_enablement_scenarios,
+                                                        enablement_scenarios,
+                                                        enablement_probabilities)
+        scenario_weights = {f: [] for f in F}
 
         for f in F:
             scenarios[f] = price_scenarios[f] * enablement_scenarios[f]
