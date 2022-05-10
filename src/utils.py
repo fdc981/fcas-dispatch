@@ -311,6 +311,10 @@ def inverse_cdf_matrix(y, quantile_cutoffs, quantile_values):
     assert quantile_values.shape == quantile_cutoffs.shape
     assert y.shape[1] == quantile_cutoffs.shape[0]
 
+    diffs = np.diff(quantile_values, axis=1)
+    if not np.all(diffs >= 0):
+        raise Exception(f"Quantile crossing found for rows: {np.nonzero(diffs < 0)[0]}")
+
     qi = -np.ones(y.shape, dtype=int)
 
     for r in range(y.shape[0]):
