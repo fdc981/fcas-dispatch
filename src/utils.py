@@ -45,7 +45,7 @@ def tabulate_solution(m):
     return df
 
 
-def show_solution(m, date_index=None):
+def show_solution(m, date_index=None, save_as=None):
     """Plot the state of charge of a solution made from optimizing
     make_cooptimisation_model, highlighting dispatch for each of the FCAS
     markets.
@@ -53,6 +53,7 @@ def show_solution(m, date_index=None):
     Args:
         m: the optimized model to plot.
         date_index: an array-like of dates to plot
+        save_as: filename to save resulting plot figure to
 
     Returns:
         None. Shows a plot of the solution.
@@ -116,6 +117,9 @@ def show_solution(m, date_index=None):
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("State of charge (in MWh)")
+
+    if save_as is not None:
+        plt.savefig(save_as)
 
     plt.show()
 
