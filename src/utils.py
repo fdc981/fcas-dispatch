@@ -124,6 +124,38 @@ def show_solution(m, date_index=None, save_as=None):
     plt.show()
 
 
+def plot_prices(model, date_index=None, save_as=None):
+    """Plot the prices of a model.
+
+    Args:
+        model: the optimized Gurobi model.
+        date_index: an array of dates as x-ticks
+        save_as: filename to save the resulting plot figure to.
+
+    Returns:
+        None.
+    """
+    n = len([v for v in model.getVars() if "p[raise_6_sec" in v.VarName])
+
+    if date_index is None:
+        date_index = [i for i in range(0, n+1)]
+
+    for f in F:
+        f_vars = [x for x in model.getVars() if 'p[' + f in x.VarName]
+        f_coeffs = [x.obj for x in f_vars]
+        service_name = f.replace('_', ' ').capitalize()
+        plt.plot(f_coeffs, label=service_name)
+
+    plt.ylabel("Expected price ($AUD per MWh)")
+    plt.xlabel("Time")
+    plt.legend()
+
+    if save_as is not None:
+        plt.savefig(save_as)
+
+    plt.show()
+
+
 def extract_tables(report_path: str) -> pd.DataFrame:
     """Extract tables from a given NEMWEB CSV report.
 
