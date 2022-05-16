@@ -217,7 +217,6 @@ def make_scenario_model(
         initial_soc=6,
         prices='auto',
         enablement_probabilities=None,
-        enablement_scenarios=None,
         scenario_combine_method='product',
         efficiency_in=0.92,
         efficiency_out=0.90,
@@ -245,11 +244,6 @@ def make_scenario_model(
             `(num_scenarios, n)`.
         enablement_probabilities: a dictionary with a matrix of enablement
             probabilities associated with each of the contingency FCAS.
-        enablement_scenarios: a dictionary with a matrix of enablement
-            scenarios associated with each of the contingency FCAS.
-            The keys for each service should be as follows: `"lower_6_sec",
-            "raise_6_sec", "lower_60_sec", "raise_60_sec", "lower_5_min",
-            "raise_5_min"`. Each array should be of size `n`.
         scenario_combine_method: either 'product' or 'zip'.
         efficiency_in: the charging efficiency, as a proportion
         efficiency_out: the discharging efficiency, as a proportion
@@ -273,8 +267,6 @@ def make_scenario_model(
     m = gp.Model()
     m.Params.LogToConsole = log
 
-    if enablement_scenarios is None:
-        raise Exception("Please provide a valid value for enablement_scenarios.")
     if enablement_probabilities is None:
         raise Exception("Please provide a valid value for enablement_probabilities.")
 
@@ -309,14 +301,11 @@ def make_scenario_model(
     for key in prices.keys():
         if prices[key].ndim == 1:
             prices[key] = prices[key].reshape((1, prices[key].shape[0]))
-        if enablement_scenarios[key].ndim == 1:
-            enablement_scenarios[key] = enablement_scenarios[key].reshape((1, enablement_scenarios[key].shape[0]))
 
     soc = m.addVars(T, vtype='C', name='soc', lb=soc_min, ub=soc_max)
     assert soc_min <= initial_soc and initial_soc <= soc_max
 
     scenario_consts = calc_scenario_consts(prices,
-                                           enablement_scenarios,
                                            enablement_probabilities,
                                            T,
                                            scenario_combine_method)

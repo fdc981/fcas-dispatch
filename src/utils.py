@@ -375,10 +375,10 @@ def inverse_cdf_matrix(y, quantile_cutoffs, quantile_values):
 
 def calc_scenario_consts(
         price_scenarios,
-        enablement_scenarios,
         enablement_probabilities,
         T,
-        scenario_combine_method
+        scenario_combine_method,
+        enablement_scenarios=None
 ):
     """Calculate the scenario constants from the given price and enablement
     scenarios. This is a helper function for `src.make_scenario_model()`.
@@ -391,26 +391,25 @@ def calc_scenario_consts(
             When values are arrays, then they must be of length `n`. Otherwise
             the values are matrices, which should be of shape
             `(num_scenarios, n)`.
-        enablement_scenarios: a dictionary with a matrix of enablement
-            scenarios associated with each of the contingency FCAS.
-            The keys for each service should be as follows: `"lower_6_sec",
-            "raise_6_sec", "lower_60_sec", "raise_60_sec", "lower_5_min",
-            "raise_5_min"`. Each array should be of size `n`.
         enablement_probabilities: a dictionary with a matrix of enablement
             probabilities associated with each of the contingency FCAS.
         T: set of indices used for trading intervals.
         scenario_combine_method: either 'product' or 'zip'.
+        enablement_scenarios: (optional) a dictionary with a matrix of
+            enablement scenarios associated with each of the contingency FCAS.
+            The keys for each service should be as follows: `"lower_6_sec",
+            "raise_6_sec", "lower_60_sec", "raise_60_sec", "lower_5_min",
+            "raise_5_min"`. Each array should be of size `n`.
 
     Returns:
         a dictionary with an array of scenario constants associated with each
         of the contingency FCAS servies.
     """
-    num_price_scenarios = price_scenarios[F[0]].shape[0]
-    num_enablement_scenarios = enablement_scenarios[F[0]].shape[0]
-
     scenarios = {}
 
     if scenario_combine_method == 'product':
+        num_price_scenarios = price_scenarios[F[0]].shape[0]
+
         scenario_consts = {}
         for f in F:
             for t in T:
@@ -418,7 +417,9 @@ def calc_scenario_consts(
                 price_sum = np.sum(price_scenarios[f][:, t]) / num_price_scenarios
 
                 scenario_consts[f, t] = enablement_sum * price_sum
-    elif scenario_combine_method == 'zip':
+    elif scenario_combine_method == 'zip' and enablement_scenarios is not None:
+        num_enablement_scenarios = enablement_scenarios[F[0]].shape[0]
+
         assert all((price_scenarios[f].shape == enablement_scenarios[f].shape for f in F))
         en_scenario_weights = calc_enablement_probs(num_enablement_scenarios,
                                                         enablement_scenarios,
