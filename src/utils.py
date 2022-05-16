@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pathlib
 import shutil
+import tikzplotlib
 from src.constants import services, F
 from itertools import product
 
@@ -119,7 +120,7 @@ def show_solution(m, date_index=None, save_as=None):
     plt.ylabel("State of charge (in MWh)")
 
     if save_as is not None:
-        plt.savefig(save_as)
+        tikzplotlib.save(save_as)
 
     plt.show()
 
@@ -151,7 +152,7 @@ def plot_prices(model, date_index=None, save_as=None):
     plt.legend()
 
     if save_as is not None:
-        plt.savefig(save_as)
+        tikzplotlib.save(save_as)
 
     plt.show()
 
