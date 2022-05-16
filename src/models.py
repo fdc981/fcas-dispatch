@@ -276,7 +276,7 @@ def make_scenario_model(
     if enablement_scenarios is None:
         raise Exception("Please provide a valid value for enablement_scenarios.")
     if enablement_probabilities is None:
-        raise Exception("Please provide a valid value for enablement_scenarios.")
+        raise Exception("Please provide a valid value for enablement_probabilities.")
 
     T = [i for i in range(n)]
 
