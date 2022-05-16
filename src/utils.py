@@ -105,13 +105,16 @@ def show_solution(m, date_index=None, save_as=None):
     for i in range(len(date_index)-1):
         for var_name in var_names:
             if sol_df.loc[i, var_name] == 1:
+                label = "_" * plotted[var_name] + var_name.replace('_', ' ').capitalize()
+
                 plt.axvspan(
                     date_index[i],
                     date_index[i+1],
+                    ymax=3,
                     alpha=0.2,
                     color=var_color[var_name],
                     lw=0,
-                    label="_"*plotted[var_name] + var_name,
+                    label=label
                 )
                 plotted[var_name] = True
 
@@ -147,7 +150,7 @@ def plot_prices(model, date_index=None, save_as=None):
         service_name = f.replace('_', ' ').capitalize()
         plt.plot(f_coeffs, label=service_name)
 
-    plt.ylabel("Expected price ($AUD per MWh)")
+    plt.ylabel("Expected price (\$AUD per MWh)")
     plt.xlabel("Time")
     plt.legend()
 
