@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pathlib
 import shutil
 import tikzplotlib
-from src.constants import services, F
+from src.constants import services, F, quantile_col_names
 from itertools import product
 
 
@@ -256,13 +256,43 @@ def load_fcas_prices():
     return price_df
 
 
-def load_fcas_price_forecast():
+def load_fcas_price_forecast(correct_crossing=False):
     """Loads and returns the Pandas dataframe of the forecast for SA FCAS
     prices.
+
+    Args:
+        correct_crossing: Applies naive correction to any quantile crossing.
+
+    Returns:
+        a DataFrame containing the interval forecasts with the price,
+        with any quantile crossing corrected if `correct_crossing == True`.
     """
     scenario_dfs = {
         s: pd.read_csv(f"../data/{s}RRP_modified_training.csv", parse_dates=["SETTLEMENTDATE"]) for s in services
     }
+
+    if correct_crossing:
+        for s in services:
+            df = scenario_dfs[s]
+            lower_quantiles = [q for q in quantile_col_names if q <= "Q_QRA5"]
+
+            # reverse the quantiles
+            lower_quantiles = lower_quantiles[::-1]
+
+            # loop through from median and downwards
+            for curr_q, next_q in zip(lower_quantiles[1:], lower_quantiles):
+                df[curr_q].where(df[curr_q] <= df[next_q], df[next_q], inplace=True)
+
+            upper_quantiles = [q for q in quantile_col_names if q >= "Q_QRA5"]
+
+            # loop through from median and upwards
+            for curr_q, next_q in zip(upper_quantiles, upper_quantiles[1:]):
+                df[next_q].where(df[curr_q] <= df[next_q], df[curr_q], inplace=True)
+
+        # verify that quantiles are monotonic increasing
+        for s in services:
+            for curr_q, next_q in zip(quantile_col_names, quantile_col_names[1:]):
+                assert all(scenario_dfs[s][curr_q] <= scenario_dfs[s][next_q])
 
     return scenario_dfs
 
